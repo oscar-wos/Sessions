@@ -1,0 +1,7 @@
+bin/
+obj/
+compiled/
+*.sln
+.vs/
+DataBaseService.cs
+SqlExample.cs

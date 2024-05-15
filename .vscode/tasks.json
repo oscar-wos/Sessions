@@ -9,7 +9,7 @@
                 "build",
                 "${workspaceFolder}/Core.csproj",
                 "--output",
-                "compiled/Core",
+                "//wsl.localhost/Debian/root/cs2/game/csgo/addons/counterstrikesharp/plugins/Core"
             ],
             "problemMatcher": "$msCompile",
             "group": {

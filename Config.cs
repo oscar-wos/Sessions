@@ -7,11 +7,14 @@ namespace Core
     {
         public override int Version { get; set; } = 1;
 
+        [JsonPropertyName("DatabaseType")]
+        public string DatabaseType { get; set; } = "postgres";
+
 		[JsonPropertyName("DatabaseHost")]
 		public string DatabaseHost { get; set; } = "";
 
 		[JsonPropertyName("DatabasePort")]
-		public int DatabasePort { get; set; } = 3036;
+		public int DatabasePort { get; set; } = 5432;
 
         [JsonPropertyName("DatabaseUser")]
         public string DatabaseUser { get; set; } = "";
@@ -22,5 +25,7 @@ namespace Core
         [JsonPropertyName("DatabaseName")]
         public string DatabaseName { get; set; } = "";
 
+        [JsonPropertyName("DatabaseKeepAlive")]
+        public int DatabaseKeepAlive { get; set; } = 30;
     }
 }
