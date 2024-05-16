@@ -11,19 +11,21 @@ namespace Core
         private readonly string _connectionString;
         private string[] _tables = ["players", "maps", "sessions", "aliases"];
 
-        private string players = @"CREATE TABLE IF NOT EXISTS players (
+        private readonly NpgsqlConnection _connection;
+
+        private readonly string players = @"CREATE TABLE IF NOT EXISTS players (
             id SERIAL PRIMARY KEY,
             steam_id BIGINT NOT NULL,
             first_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             last_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )";
 
-        private string maps = @"CREATE TABLE IF NOT EXISTS maps (
+        private readonly string maps = @"CREATE TABLE IF NOT EXISTS maps (
             id SERIAL PRIMARY KEY,
             map_name VARCHAR(255) NOT NULL
         )";
 
-        private string sessions = @"CREATE TABLE IF NOT EXISTS sessions (
+        private readonly string sessions = @"CREATE TABLE IF NOT EXISTS sessions (
             id BIGSERIAL PRIMARY KEY,
             player_id INT NOT NULL,
             map_id INT NOT NULL,
@@ -31,7 +33,7 @@ namespace Core
             end_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )";
 
-        private string aliases = @"CREATE TABLE IF NOT EXISTS aliases (
+        private readonly string aliases = @"CREATE TABLE IF NOT EXISTS aliases (
             id BIGSERIAL PRIMARY KEY,
             player_id INT NOT NULL,
             alias VARCHAR(255) NOT NULL
@@ -44,6 +46,17 @@ namespace Core
 
             _config = config;
             _connectionString = BuildPostgresConnectionString();
+
+            try
+            {
+                _connection = new NpgsqlConnection(_connectionString);
+                _connection.Open();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while opening database connection");
+                throw;
+            }
         }
         
         private string BuildPostgresConnectionString()
@@ -74,10 +87,7 @@ namespace Core
         {
             try
             {
-                await using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
-                
-                await using var transaction = await connection.BeginTransactionAsync();
+                await using NpgsqlTransaction transaction = await _connection.BeginTransactionAsync();
 
                 try
                 {
@@ -92,7 +102,7 @@ namespace Core
                             _ => throw new InvalidOperationException($"Unknown table: {table}")
                         };
 
-                        await connection.ExecuteAsync(createTableQuery, transaction: transaction);
+                        await _connection.ExecuteAsync(createTableQuery, transaction: transaction);
                     }
 
                     await transaction.CommitAsync();
@@ -109,6 +119,27 @@ namespace Core
                 _logger.LogError(ex, "Error while opening database connection");
                 throw;
             }
+        }
+    
+        public async Task<IEnumerable<Player>> GetPlayerBySteamId(ulong steamId)
+        {
+            try
+            {
+                var result = await _connection.QueryAsync<Player>("SELECT id, first_seen, last_seen FROM players WHERE steam_id = @SteamId", new { SteamId = (long)steamId });
+            
+                if (result == null)
+                {
+                    await _connection.ExecuteAsync("INSERT INTO players (steam_id) VALUES (@SteamId)", new { SteamId = (long)steamId });
+                    return await GetPlayerBySteamId(steamId);
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while getting player by steam id");
+                throw;
+            } 
         }
     }
 }

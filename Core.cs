@@ -1,3 +1,4 @@
+using System.Numerics;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
@@ -12,8 +13,6 @@ namespace Core;
 public partial class Core : BasePlugin, IPluginConfig<CoreConfig>
 {
     public CoreConfig Config { get; set; } = new();
-    //internal static DataBase? _dataBase;
-    internal static DataBaseService? _dataBaseService;
     internal static PostgresService? _postgresService;
 
     public override string ModuleName => "Core";
@@ -26,31 +25,25 @@ public partial class Core : BasePlugin, IPluginConfig<CoreConfig>
 	{
         _postgresService = new PostgresService(config);
         await _postgresService.InitConnectAsync();
-        /*
-        var con = new NpgsqlConnection(
-            connectionString: "Server=127.0.0.1;Port=5432;User Id=cs2;Password=lol;Database=cs2db;");
-        con.Open();
 
-        using var cmd = new NpgsqlCommand();
-        cmd.Connection = con;
-
-        cmd.CommandText = $"DROP TABLE IF EXISTS teachers";
-        await cmd.ExecuteNonQueryAsync();
-        /*s
-        _dataBaseService = new DataBaseService(config);
-        _dataBaseService.TestAndCheckDataBaseTableAsync().GetAwaiter().GetResult(); 1
-        */
         Config = config;
     }
-    
 
     public override void Load(bool hotReload)
     {
     }
-    
+
     [ConsoleCommand("css_hello", "Say hello in the player language")]
-    public void OnCommandHello(CCSPlayerController? player, CommandInfo command)
+    public async void OnCommandHello(CCSPlayerController? player, CommandInfo command)
     {
+        if (player != null)
+        {
+            ulong steamId = player.SteamID;
+
+            var playerData = await _postgresService!.GetPlayerBySteamId(steamId);
+            Console.WriteLine(playerData);
+        }
+        /*
         if (player != null)
         {
             string playerName = player.PlayerName;
@@ -60,10 +53,8 @@ public partial class Core : BasePlugin, IPluginConfig<CoreConfig>
 
             _ = CheckPlayerCommand(commandString, playerName, playerSteamId);
 
-            
+            command.ReplyToCommand($"{Localizer["hello.player", playerName, playerLanguage]}");
         }
-
-        if (player != null)
-            command.ReplyToCommand($"{Localizer["hello.player", player.PlayerName, player.GetLanguage()]}");
+        */
     }
 }
