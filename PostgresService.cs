@@ -136,7 +136,7 @@ namespace Core
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while getting player by steam_id");
+                _logger.LogError(ex, "Error while getting player");
                 throw;
             } 
         }
@@ -154,7 +154,7 @@ namespace Core
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while getting map by map_name");
+                _logger.LogError(ex, "Error while getting map");
                 throw;
             } 
         }
@@ -167,41 +167,22 @@ namespace Core
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while getting session by player");
+                _logger.LogError(ex, "Error while getting session");
                 throw;
             }
         }
-
-
-
-        /*
-        public async Task<SessionSQL> GetSession(int playerId, int mapId)
+    
+        public async Task UpdateSeenAsync(int playerId)
         {
             try
             {
-                
-                Transaction 
-
-                var result = await _connection.QueryFirstOrDefaultAsync<SessionSQL>("SELECT id FROM sessions WHERE player_id = @PlayerId AND map_id = @MapId", new { PlayerId = playerId, MapId = mapId });
-            
-                if (result == null)
-                {
-                    int count = await _connection.ExecuteAsync("INSERT INTO sessions (player_id, map_id) VALUES (@PlayerId, @MapId)", new { PlayerId = playerId, MapId = mapId });
-
-                    if (count == 0)
-                        throw new InvalidOperationException("Error while inserting session into database");
-                    
-                    return await GetSession(playerId, mapId);
-                }
-
-                return result;
-                
+                await _connection.ExecuteAsync("UPDATE players SET last_seen = NOW() WHERE id = @PlayerId", new { PlayerId = playerId });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while getting session by player");
+                _logger.LogError(ex, "Error while updating seen");
                 throw;
+            }
         }
-        */
     }
 }

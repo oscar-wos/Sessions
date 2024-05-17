@@ -27,23 +27,33 @@ public partial class Core : BasePlugin, IPluginConfig<CoreConfig>
         Config = config;
     }
 
-    public override void Load(bool hotReload)
+    public async override void Load(bool hotReload)
     {
-        if (!hotReload)
-            return;
-
         foreach (CCSPlayerController player in Utilities.GetPlayers())
-            OnPlayerConnect(player);
+        {
+            await OnPlayerConnect(player);
+
+            if (hotReload)
+                OnClientDisconnect(player);
+        }
+            
     }
 
     [GameEventHandler]
     public HookResult OnPlayerConnectFull(EventPlayerConnectFull @event, GameEventInfo info)
     {
-        OnPlayerConnect(@event.Userid!);
+        OnPlayerConnect(@event.Userid!).GetAwaiter().GetResult();
         return HookResult.Continue;
     }
 
-    public async void OnPlayerConnect(CCSPlayerController player)
+    [GameEventHandler]
+    public HookResult OnClientDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
+    {
+        OnClientDisconnect(@event.Userid!);
+        return HookResult.Continue;
+    }
+
+    public async Task OnPlayerConnect(CCSPlayerController player)
     {
         if (player == null || player.IsBot)
             return;
@@ -53,5 +63,13 @@ public partial class Core : BasePlugin, IPluginConfig<CoreConfig>
 
         SessionSQL sessionSQL = await _postgresService.GetSessionAsync(playerSQL.Id, _map.Id);
         _players[player.Slot].Session = sessionSQL;
+    }
+
+    public async void OnClientDisconnect(CCSPlayerController player)
+    {
+        if (player == null || player.IsBot)
+            return;
+
+        await _postgresService!.UpdateSeenAsync(_players[player.Slot].Id);
     }
 }
