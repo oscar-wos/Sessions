@@ -121,11 +121,11 @@ namespace Core
             }
         }
     
-        public async Task<Player> GetPlayerBySteamId(ulong steamId)
+        public async Task<PlayerSQL> GetPlayerBySteamId(ulong steamId)
         {
             try
             {
-                var result = await _connection.QueryFirstOrDefaultAsync<Player>("SELECT id, first_seen, last_seen FROM players WHERE steam_id = @SteamId", new { SteamId = (long)steamId });
+                var result = await _connection.QueryFirstOrDefaultAsync<PlayerSQL>("SELECT id, first_seen, last_seen FROM players WHERE steam_id = @SteamId", new { SteamId = (long)steamId });
             
                 if (result == null)
                 {
@@ -146,11 +146,11 @@ namespace Core
             } 
         }
     
-        public async Task<Map> GetMapByMapName(string mapName)
+        public async Task<MapSQL> GetMapByMapName(string mapName)
         {
             try
             {
-                var result = await _connection.QueryFirstOrDefaultAsync<Map>("SELECT id FROM maps WHERE map_name = @MapName", new { MapName = mapName });
+                var result = await _connection.QueryFirstOrDefaultAsync<MapSQL>("SELECT id FROM maps WHERE map_name = @MapName", new { MapName = mapName });
             
                 if (result == null)
                 {

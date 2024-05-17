@@ -1,13 +1,13 @@
 namespace Core
 {
-    public class Player()
+    public class PlayerSQL()
     {
         public int Id { get; set; }
         public DateTime FirstSeen { get; set; }
         public DateTime LastSeen { get; set; }
     }
 
-    public class Map()
+    public class MapSQL()
     {
         public int Id { get; set; }
     }
