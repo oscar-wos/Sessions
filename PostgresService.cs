@@ -21,8 +21,8 @@ namespace Core
         )";
 
         private readonly string maps = @"CREATE TABLE IF NOT EXISTS maps (
-            id SERIAL PRIMARY KEY,
-            map_name VARCHAR(255) NOT NULL
+            id SERIAL,
+            map_name VARCHAR(255) NOT NULL PRIMARY KEY
         )";
 
         private readonly string sessions = @"CREATE TABLE IF NOT EXISTS sessions (
@@ -121,15 +121,19 @@ namespace Core
             }
         }
     
-        public async Task<IEnumerable<Player>> GetPlayerBySteamId(ulong steamId)
+        public async Task<Player> GetPlayerBySteamId(ulong steamId)
         {
             try
             {
-                var result = await _connection.QueryAsync<Player>("SELECT id, first_seen, last_seen FROM players WHERE steam_id = @SteamId", new { SteamId = (long)steamId });
+                var result = await _connection.QueryFirstOrDefaultAsync<Player>("SELECT id, first_seen, last_seen FROM players WHERE steam_id = @SteamId", new { SteamId = (long)steamId });
             
                 if (result == null)
                 {
-                    await _connection.ExecuteAsync("INSERT INTO players (steam_id) VALUES (@SteamId)", new { SteamId = (long)steamId });
+                    int count = await _connection.ExecuteAsync("INSERT INTO players (steam_id) VALUES (@SteamId)", new { SteamId = (long)steamId });
+
+                    if (count == 0)
+                        throw new InvalidOperationException("Error while inserting player into database");
+                    
                     return await GetPlayerBySteamId(steamId);
                 }
 
@@ -137,7 +141,32 @@ namespace Core
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while getting player by steam id");
+                _logger.LogError(ex, "Error while getting player by steam_id");
+                throw;
+            } 
+        }
+    
+        public async Task<Map> GetMapByMapName(string mapName)
+        {
+            try
+            {
+                var result = await _connection.QueryFirstOrDefaultAsync<Map>("SELECT id FROM maps WHERE map_name = @MapName", new { MapName = mapName });
+            
+                if (result == null)
+                {
+                    int count = await _connection.ExecuteAsync("INSERT INTO maps (map_name) VALUES (@MapName)", new { MapName = mapName });
+
+                    if (count == 0)
+                        throw new InvalidOperationException("Error while inserting map into database");
+                    
+                    return await GetMapByMapName(mapName);
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while getting map by map_name");
                 throw;
             } 
         }
