@@ -9,20 +9,20 @@ public partial class Core : BasePlugin, IPluginConfig<CoreConfig>
 {
     internal static PostgresService? _postgresService;
     public CoreConfig Config { get; set; } = new();
-    public MapSQL _map = new();
 
     public override string ModuleName => "Core";
     public override string ModuleDescription => "";
     public override string ModuleAuthor => "Oscar Wos-Szlaga";
     public override string ModuleVersion => "0.0.1";
 
+    private MapSQL _map = new();
     private Dictionary<int, PlayerSQL> _players = [];
     
     public void OnConfigParsed(CoreConfig config)
 	{
         _postgresService = new PostgresService(config);
         _postgresService.InitConnectAsync().GetAwaiter().GetResult();
-        _map = _postgresService.GetMapByMapName(Server.MapName).GetAwaiter().GetResult();
+        _map = _postgresService.GetMapByMapNameAsync(Server.MapName).GetAwaiter().GetResult();
 
         Config = config;
     }
@@ -43,14 +43,15 @@ public partial class Core : BasePlugin, IPluginConfig<CoreConfig>
         return HookResult.Continue;
     }
 
-    public void OnPlayerConnect(CCSPlayerController player)
+    public async void OnPlayerConnect(CCSPlayerController player)
     {
         if (player == null || player.IsBot)
             return;
 
-        PlayerSQL playerSQL = _postgresService!.GetPlayerBySteamId(player.SteamID).GetAwaiter().GetResult();
+        PlayerSQL playerSQL = await _postgresService!.GetPlayerBySteamIdAsync(player.SteamID);
         _players[player.Slot] = playerSQL;
 
-        Console.WriteLine(_players[player.Slot].Id);
+        SessionSQL sessionSQL = await _postgresService.GetSessionAsync(playerSQL.Id, _map.Id);
+        _players[player.Slot].Session = sessionSQL;
     }
 }

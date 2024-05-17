@@ -5,6 +5,8 @@ namespace Core
         public int Id { get; set; }
         public DateTime FirstSeen { get; set; }
         public DateTime LastSeen { get; set; }
+        
+        public SessionSQL? Session { get; set; }
     }
 
     public class MapSQL()
@@ -12,7 +14,7 @@ namespace Core
         public int Id { get; set; }
     }
 
-    public class Session()
+    public class SessionSQL()
     {
         public int Id { get; set; }
     }

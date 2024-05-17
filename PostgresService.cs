@@ -1,6 +1,7 @@
 using Dapper;
 using Npgsql;
 using Microsoft.Extensions.Logging;
+using System.Transactions;
 
 namespace Core
 {
@@ -14,10 +15,10 @@ namespace Core
         private readonly NpgsqlConnection _connection;
 
         private readonly string players = @"CREATE TABLE IF NOT EXISTS players (
-            id SERIAL PRIMARY KEY,
-            steam_id BIGINT NOT NULL,
-            first_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            last_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            id SERIAL,
+            steam_id BIGINT NOT NULL PRIMARY KEY,
+            first_seen TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_seen TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
         )";
 
         private readonly string maps = @"CREATE TABLE IF NOT EXISTS maps (
@@ -29,14 +30,15 @@ namespace Core
             id BIGSERIAL PRIMARY KEY,
             player_id INT NOT NULL,
             map_id INT NOT NULL,
-            start_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            end_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            start_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            end_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
         )";
 
         private readonly string aliases = @"CREATE TABLE IF NOT EXISTS aliases (
             id BIGSERIAL PRIMARY KEY,
             player_id INT NOT NULL,
-            alias VARCHAR(255) NOT NULL
+            alias VARCHAR(255) NOT NULL,
+            timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
         )";
 
         public PostgresService(CoreConfig config)
@@ -121,23 +123,16 @@ namespace Core
             }
         }
     
-        public async Task<PlayerSQL> GetPlayerBySteamId(ulong steamId)
+        public async Task<PlayerSQL> GetPlayerBySteamIdAsync(ulong steamId)
         {
             try
             {
-                var result = await _connection.QueryFirstOrDefaultAsync<PlayerSQL>("SELECT id, first_seen, last_seen FROM players WHERE steam_id = @SteamId", new { SteamId = (long)steamId });
-            
-                if (result == null)
-                {
-                    int count = await _connection.ExecuteAsync("INSERT INTO players (steam_id) VALUES (@SteamId)", new { SteamId = (long)steamId });
+                PlayerSQL? result = await _connection.QueryFirstOrDefaultAsync<PlayerSQL>("SELECT id, first_seen, last_seen FROM players WHERE steam_id = @SteamId", new { SteamId = (long)steamId });
 
-                    if (count == 0)
-                        throw new InvalidOperationException("Error while inserting player into database");
-                    
-                    return await GetPlayerBySteamId(steamId);
-                }
-
-                return result;
+                if (result != null)
+                    return result;
+                
+                return await _connection.QuerySingleAsync<PlayerSQL>("INSERT INTO players (steam_id) VALUES (@SteamId) RETURNING id, first_seen, last_seen", new { SteamId = (long)steamId });
             }
             catch (Exception ex)
             {
@@ -146,23 +141,16 @@ namespace Core
             } 
         }
     
-        public async Task<MapSQL> GetMapByMapName(string mapName)
+        public async Task<MapSQL> GetMapByMapNameAsync(string mapName)
         {
             try
             {
-                var result = await _connection.QueryFirstOrDefaultAsync<MapSQL>("SELECT id FROM maps WHERE map_name = @MapName", new { MapName = mapName });
+                MapSQL? result = await _connection.QueryFirstOrDefaultAsync<MapSQL>("SELECT id FROM maps WHERE map_name = @MapName", new { MapName = mapName });
             
-                if (result == null)
-                {
-                    int count = await _connection.ExecuteAsync("INSERT INTO maps (map_name) VALUES (@MapName)", new { MapName = mapName });
+                if (result != null)
+                    return result;
 
-                    if (count == 0)
-                        throw new InvalidOperationException("Error while inserting map into database");
-                    
-                    return await GetMapByMapName(mapName);
-                }
-
-                return result;
+                return await _connection.QuerySingleAsync<MapSQL>("INSERT INTO maps (map_name) VALUES (@MapName) RETURNING id", new { MapName = mapName });                
             }
             catch (Exception ex)
             {
@@ -170,5 +158,50 @@ namespace Core
                 throw;
             } 
         }
+
+        public async Task<SessionSQL> GetSessionAsync(int playerId, int mapId)
+        {
+            try
+            {
+                return await _connection.QuerySingleAsync<SessionSQL>("INSERT INTO sessions (player_id, map_id) VALUES (@PlayerId, @MapId) RETURNING id", new { PlayerId = playerId, MapId = mapId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while getting session by player");
+                throw;
+            }
+        }
+
+
+
+        /*
+        public async Task<SessionSQL> GetSession(int playerId, int mapId)
+        {
+            try
+            {
+                
+                Transaction 
+
+                var result = await _connection.QueryFirstOrDefaultAsync<SessionSQL>("SELECT id FROM sessions WHERE player_id = @PlayerId AND map_id = @MapId", new { PlayerId = playerId, MapId = mapId });
+            
+                if (result == null)
+                {
+                    int count = await _connection.ExecuteAsync("INSERT INTO sessions (player_id, map_id) VALUES (@PlayerId, @MapId)", new { PlayerId = playerId, MapId = mapId });
+
+                    if (count == 0)
+                        throw new InvalidOperationException("Error while inserting session into database");
+                    
+                    return await GetSession(playerId, mapId);
+                }
+
+                return result;
+                
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while getting session by player");
+                throw;
+        }
+        */
     }
 }
