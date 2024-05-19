@@ -1,2 +1,3 @@
 # Sessions
-![image](https://github.com/oscar-wos/Sessions/assets/29248751/d75eea25-0213-4625-af76-783f780521c9)
+![image](https://github.com/oscar-wos/Sessions/assets/29248751/8cd6c2b6-573d-488d-805c-386db9e51b2e)
+
