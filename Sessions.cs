@@ -14,7 +14,7 @@ public partial class Core : BasePlugin, IPluginConfig<CoreConfig>
     public override string ModuleName => "Sessions";
     public override string ModuleDescription => "Track player sessions";
     public override string ModuleAuthor => "Oscar Wos-Szlaga";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.1.1";
 
     private readonly Ip _ip = new();
     private ServerSQL _server = new();
@@ -39,8 +39,8 @@ public partial class Core : BasePlugin, IPluginConfig<CoreConfig>
             _server.Map = _postgresService!.GetMapByMapNameAsync(mapName).GetAwaiter().GetResult()
         );
 
-        RegisterListener<Listeners.OnClientAuthorized>((playerSlot, steamId) =>
-            OnPlayerConnect(playerSlot, steamId.SteamId64).GetAwaiter().GetResult()
+        RegisterListener<Listeners.OnClientAuthorized>(async (playerSlot, steamId) =>
+            await OnPlayerConnect(playerSlot, steamId.SteamId64, NativeAPI.GetPlayerIpAddress(playerSlot).Split(":")[0])
         );
 
         RegisterListener<Listeners.OnClientDisconnect>(playerSlot =>
@@ -55,18 +55,18 @@ public partial class Core : BasePlugin, IPluginConfig<CoreConfig>
             return;
         
         _server.Map = _postgresService!.GetMapByMapNameAsync(Server.MapName).GetAwaiter().GetResult();
-        Utilities.GetPlayers().Where(player => !player.IsBot).ToList().ForEach(player => OnPlayerConnect(player.Slot, player.SteamID).GetAwaiter().GetResult());
+        Utilities.GetPlayers().Where(player => !player.IsBot).ToList().ForEach(player => OnPlayerConnect(player.Slot, player.SteamID, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]).GetAwaiter().GetResult());
     }
     
     public void Timer_Repeat()
     {
-        int[] sessionIds = Utilities.GetPlayers().Where(player => _players[player.Slot].Session != null).Select(player => _players[player.Slot].Session!.Id).ToArray();
+        int[] sessionIds = Utilities.GetPlayers().Where(player => _players.TryGetValue(player.Slot, out PlayerSQL? p) && p.Session != null).Select(player => _players[player.Slot].Session!.Id).ToArray();
         _postgresService!.UpdatePlayedBulkAsync(sessionIds);
     }
 
-    public async Task OnPlayerConnect(int playerSlot, ulong steamId)
+    public async Task OnPlayerConnect(int playerSlot, ulong steamId, string ip)
     {
         _players[playerSlot] = await _postgresService!.GetPlayerBySteamIdAsync(steamId);
-        _players[playerSlot].Session = await _postgresService.GetSessionAsync(_players[playerSlot].Id, _server.Id, _server.Map!.Id);
+        _players[playerSlot].Session = await _postgresService.GetSessionAsync(_players[playerSlot].Id, _server.Id, _server.Map!.Id, ip);
     }
 }

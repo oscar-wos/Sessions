@@ -36,6 +36,7 @@ public class PostgresService
         player_id INT NOT NULL,
         server_id SMALLINT NOT NULL,
         map_id SMALLINT NOT NULL,
+        ip INET NOT NULL,
         start_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
         end_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
     )";
@@ -187,11 +188,11 @@ public class PostgresService
         } 
     }
 
-    public async Task<SessionSQL> GetSessionAsync(int playerId, int serverId, int mapId)
+    public async Task<SessionSQL> GetSessionAsync(int playerId, int serverId, int mapId, string ip)
     {
         try
         {
-            return await _connection.QuerySingleAsync<SessionSQL>("INSERT INTO sessions (player_id, server_id, map_id) VALUES (@PlayerId, @ServerId, @MapId) RETURNING id", new { PlayerId = playerId, ServerId = serverId, MapId = mapId });
+            return await _connection.QuerySingleAsync<SessionSQL>("INSERT INTO sessions (player_id, server_id, map_id, ip) VALUES (@PlayerId, @ServerId, @MapId, CAST(@Ip as INET)) RETURNING id", new { PlayerId = playerId, ServerId = serverId, MapId = mapId, Ip = ip});
         }
         catch (Exception ex)
         {
