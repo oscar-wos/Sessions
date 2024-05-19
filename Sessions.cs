@@ -1,7 +1,5 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Core.Attributes.Registration;
-using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Timers;
 
 namespace Core;
@@ -10,30 +8,30 @@ namespace Core;
 public partial class Core : BasePlugin, IPluginConfig<CoreConfig>
 {
     internal static PostgresService? _postgresService;
-    public CounterStrikeSharp.API.Modules.Timers.Timer? _timer;
     public CoreConfig Config { get; set; } = new();
 
-    public override string ModuleName => "Core";
-    public override string ModuleDescription => "";
+    public override string ModuleName => "Sessions";
+    public override string ModuleDescription => "Track player sessions";
     public override string ModuleAuthor => "Oscar Wos-Szlaga";
-    public override string ModuleVersion => "0.0.1";
+    public override string ModuleVersion => "1.0.0";
 
     private MapSQL _map = new();
-    private Dictionary<int, PlayerSQL> _players = [];
+    public Dictionary<int, PlayerSQL> _players = [];
+    public CounterStrikeSharp.API.Modules.Timers.Timer? _timer;
     
     public void OnConfigParsed(CoreConfig config)
 	{
         _postgresService = new PostgresService(config);
         _postgresService.InitConnectAsync().GetAwaiter().GetResult();
-        _timer = AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
 
         Config = config;
     }
 
     public void Timer_Repeat()
     {
-
-    }   
+        int[] sessionIds = Utilities.GetPlayers().Where(player => _players[player.Slot].Session != null).Select(player => _players[player.Slot].Session!.Id).ToArray();
+        _postgresService!.UpdatePlayedBulkAsync(sessionIds);
+    }
 
     public override void Load(bool hotReload)
     {
@@ -44,6 +42,14 @@ public partial class Core : BasePlugin, IPluginConfig<CoreConfig>
         RegisterListener<Listeners.OnClientAuthorized>((playerSlot, steamId) =>
             OnPlayerConnect(playerSlot, steamId.SteamId64).GetAwaiter().GetResult()
         );
+
+        RegisterListener<Listeners.OnClientDisconnect>(playerSlot =>
+        {
+            _postgresService!.UpdateSeenAsync(_players[playerSlot].Id).GetAwaiter().GetResult();
+            _players.Remove(playerSlot);
+        });
+
+        _timer = AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
         
         if (!hotReload)
             return;
@@ -52,7 +58,7 @@ public partial class Core : BasePlugin, IPluginConfig<CoreConfig>
 
         foreach (CCSPlayerController player in Utilities.GetPlayers())
         {
-            if (player == null || player.IsBot)
+            if (player.IsBot)
                 continue;
 
             OnPlayerConnect(player.Slot, player.SteamID).GetAwaiter().GetResult();
@@ -63,15 +69,5 @@ public partial class Core : BasePlugin, IPluginConfig<CoreConfig>
     {
         _players[playerSlot] = await _postgresService!.GetPlayerBySteamIdAsync(steamId);
         _players[playerSlot].Session = await _postgresService.GetSessionAsync(_players[playerSlot].Id, _map.Id);
-    }
-
-    [GameEventHandler]
-    public async void OnClientDisconnect(CCSPlayerController player)
-    {
-        if (player == null || player.IsBot || !_players.TryGetValue(player.Slot, out PlayerSQL? value))
-            return;
-
-        await _postgresService!.UpdateSeenAsync(value.Id);
-        _players.Remove(player.Slot);
     }
 }

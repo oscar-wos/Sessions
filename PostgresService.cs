@@ -1,7 +1,6 @@
 using Dapper;
 using Npgsql;
 using Microsoft.Extensions.Logging;
-using System.Transactions;
 
 namespace Core
 {
@@ -10,7 +9,7 @@ namespace Core
         private readonly ILogger<PostgresService> _logger;
         private readonly CoreConfig _config;
         private readonly string _connectionString;
-        private string[] _tables = ["players", "maps", "sessions", "aliases"];
+        private string[] _tables = ["players", "maps", "sessions"];
 
         private readonly NpgsqlConnection _connection;
 
@@ -22,24 +21,26 @@ namespace Core
         )";
 
         private readonly string maps = @"CREATE TABLE IF NOT EXISTS maps (
-            id SERIAL,
+            id SMALLSERIAL,
             map_name VARCHAR(255) NOT NULL PRIMARY KEY
         )";
 
         private readonly string sessions = @"CREATE TABLE IF NOT EXISTS sessions (
             id BIGSERIAL PRIMARY KEY,
             player_id INT NOT NULL,
-            map_id INT NOT NULL,
+            map_id SMALLINT NOT NULL,
             start_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
             end_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
         )";
 
+        /*
         private readonly string aliases = @"CREATE TABLE IF NOT EXISTS aliases (
             id BIGSERIAL PRIMARY KEY,
             player_id INT NOT NULL,
             alias VARCHAR(255) NOT NULL,
             timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
         )";
+        */
 
         public PostgresService(CoreConfig config)
         {   
@@ -100,7 +101,7 @@ namespace Core
                             "players" => players,
                             "maps" => maps,
                             "sessions" => sessions,
-                            "aliases" => aliases,
+                            //"aliases" => aliases,
                             _ => throw new InvalidOperationException($"Unknown table: {table}")
                         };
 
@@ -181,6 +182,25 @@ namespace Core
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while updating seen");
+                throw;
+            }
+        }
+    
+        public async void UpdatePlayedBulkAsync(int[] sessionIds)
+        {
+            NpgsqlTransaction tx = await _connection.BeginTransactionAsync();
+
+            try
+            {
+                foreach (var sessionId in sessionIds)
+                    await _connection.ExecuteAsync("UPDATE sessions SET end_time = NOW() WHERE id = @SessionId", new { SessionId = sessionId }, transaction: tx);
+                
+                await tx.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                _logger.LogError(ex, "Error while updating played bulk");
                 throw;
             }
         }

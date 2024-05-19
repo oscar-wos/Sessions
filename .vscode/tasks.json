@@ -7,9 +7,9 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/Core.csproj",
+                "${workspaceFolder}/Sessions.csproj",
                 "--output",
-                "//wsl.localhost/Debian/root/cs2/game/csgo/addons/counterstrikesharp/plugins/Core"
+                "//wsl.localhost/Debian/root/cs2/game/csgo/addons/counterstrikesharp/plugins/Sessions"
             ],
             "problemMatcher": "$msCompile",
             "group": {
