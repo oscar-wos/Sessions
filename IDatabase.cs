@@ -5,16 +5,12 @@ namespace Sessions;
 public interface IDatabase
 {
     string BuildConnectionString(CoreConfig config);
-}
-
-public interface IDatabaseQueries
-{
+    void CreateTablesAsync();
 }
 
 public interface IDatabaseFactory
 {
     IDatabase Database { get; }
-    ILogger Logger { get; }
 }
 
 public class DatabaseFactory : IDatabaseFactory
@@ -38,7 +34,6 @@ public class DatabaseFactory : IDatabaseFactory
     }
 
     public IDatabase Database => _database;
-    public ILogger Logger => _logger;
 
     private static void CheckConfig(CoreConfig config)
     {

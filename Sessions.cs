@@ -18,5 +18,6 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
         Config = config;
 
         _database = new DatabaseFactory(config).Database;
+        _database.CreateTablesAsync();
     }
 }

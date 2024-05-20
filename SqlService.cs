@@ -41,4 +41,9 @@ public class SqlService : IDatabase
 
         return builder.ConnectionString;
     }
+
+    public void CreateTablesAsync()
+    {
+        
+    }
 }
