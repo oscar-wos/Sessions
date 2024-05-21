@@ -35,7 +35,7 @@ public class DatabaseFactory : IDatabaseFactory
 
         _database = config.DatabaseType switch
         {
-            "postgres" => new PostgresService(config, _logger),
+            "postgresql" => new PostgreService(config, _logger),
             "mysql" => new SqlService(config, _logger),
             _ => throw new InvalidOperationException("Database type is not supported"),
         };

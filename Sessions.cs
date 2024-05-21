@@ -12,7 +12,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
     public override string ModuleName => "Sessions";
     public override string ModuleDescription => "Track player sessions";
     public override string ModuleAuthor => "github.com/oscar-wos/Sessions";
-    public override string ModuleVersion => "1.2.1";
+    public override string ModuleVersion => "1.2.2";
 
     public required IDatabase _database;
     public readonly Ip _ip = new();

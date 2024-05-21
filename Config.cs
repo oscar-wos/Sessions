@@ -8,13 +8,13 @@ public class CoreConfig : BasePluginConfig
     public override int Version { get; set; } = 1;
 
     [JsonPropertyName("DatabaseType")]
-    public string DatabaseType { get; set; } = "postgres";
+    public string DatabaseType { get; set; } = "mysql";
 
     [JsonPropertyName("DatabaseHost")]
     public string DatabaseHost { get; set; } = "";
 
     [JsonPropertyName("DatabasePort")]
-    public int DatabasePort { get; set; } = 5432;
+    public int DatabasePort { get; set; } = 3306;
 
     [JsonPropertyName("DatabaseUser")]
     public string DatabaseUser { get; set; } = "";

@@ -1,7 +1,7 @@
 # Sessions
-Record player's first seen & last seen + connect & disconnect timestamps, with indexes for players/maps/servers.
+Record player's first seen & last seen + connect & disconnect timestamps, with ips. Indexes for players/maps/servers.
 
-Supports postgres + mysql
+Supports postgre + mysql
 
 `counterstrikesharp/configs/plugins/Sessions/Sessions.json`
 
@@ -11,7 +11,7 @@ Supports postgres + mysql
 }
 
 {
-  "DatabaseType": "postgres",
+  "DatabaseType": "postgresql",
 }
 ```
 

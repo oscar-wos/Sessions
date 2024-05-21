@@ -4,18 +4,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Sessions;
 
-public class PostgresService : IDatabase
+public class PostgreService : IDatabase
 {
     private readonly ILogger _logger;
-    private readonly PostgresServiceQueries _queries;
+    private readonly PostgreServiceQueries _queries;
 
     private readonly string _connectionString;
     private readonly NpgsqlConnection _connection;
 
-    public PostgresService(CoreConfig config, ILogger logger)
+    public PostgreService(CoreConfig config, ILogger logger)
     {
         _logger = logger;
-        _queries = new PostgresServiceQueries();
+        _queries = new PostgreServiceQueries();
         _connectionString = BuildConnectionString(config);
         
         try
@@ -166,7 +166,7 @@ public class PostgresService : IDatabase
     }
 }
 
-public class PostgresServiceQueries : Queries
+public class PostgreServiceQueries : Queries
 {
     public override string CreateServers => @"CREATE TABLE IF NOT EXISTS servers (
         id SMALLSERIAL PRIMARY KEY,
