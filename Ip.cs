@@ -3,7 +3,7 @@
 using System.Runtime.InteropServices;
 using CounterStrikeSharp.API.Core;
 
-namespace Core;
+namespace Sessions;
 
 public class Ip
 {

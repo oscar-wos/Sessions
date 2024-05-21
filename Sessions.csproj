@@ -11,11 +11,13 @@
     <ItemGroup>
         <PackageReference Include="CounterStrikeSharp.API" Version="*" />
         <PackageReference Include="Dapper" Version="*" />
-        <PackageReference Include="Npgsql" Version="8.0.3" />
+        <PackageReference Include="Npgsql" Version="*" />
+        <PackageReference Include="MySqlConnector" Version="*" />
     </ItemGroup>
 
     <ItemGroup>
         <None Update="lang\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+        <Compile Remove="1.1\**" />
     </ItemGroup>
 
 </Project>
