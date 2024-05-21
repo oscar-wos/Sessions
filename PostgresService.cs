@@ -1,26 +1,27 @@
 using Dapper;
-using Microsoft.Extensions.Logging;
 using Npgsql;
+using Microsoft.Extensions.Logging;
 
 namespace Sessions;
 
 public class PostgresService : IDatabase
 {
     private readonly ILogger _logger;
+    private readonly PostgresServiceQueries _queries;
+
     private readonly string _connectionString;
     private readonly NpgsqlConnection _connection;
-    private readonly PostgresServiceQueries _queries;
 
     public PostgresService(CoreConfig config, ILogger logger)
     {
         _logger = logger;
-        _connectionString = BuildConnectionString(config);
         _queries = new PostgresServiceQueries();
-
+        _connectionString = BuildConnectionString(config);
+        
         try
         {
             _connection = new NpgsqlConnection(_connectionString);
-            _connection.Open();    
+            _connection.Open();
         }
         catch (NpgsqlException ex)
         {
@@ -43,24 +44,6 @@ public class PostgresService : IDatabase
         };
 
         return builder.ConnectionString;
-    }
-
-    public async void CreateTablesAsync()
-    {
-        try
-        {
-            await using NpgsqlTransaction tx = await _connection.BeginTransactionAsync();
-
-            foreach (string query in _queries.GetCreateQueries())
-                await _connection.ExecuteAsync(query, transaction: tx);
-
-            await tx.CommitAsync();
-        }
-        catch (NpgsqlException ex)
-        {
-            _logger.LogError(ex, "Failed to create tables");
-            throw;
-        }
     }
 
     public async Task<ServerSQL> GetServerAsync(string serverIp, ushort serverPort)
@@ -128,6 +111,24 @@ public class PostgresService : IDatabase
         catch (NpgsqlException ex)
         {
             _logger.LogError(ex, "Error while getting session");
+            throw;
+        }
+    }
+
+    public async void CreateTablesAsync()
+    {
+        try
+        {
+            await using NpgsqlTransaction tx = await _connection.BeginTransactionAsync();
+
+            foreach (string query in _queries.GetCreateQueries())
+                await _connection.ExecuteAsync(query, transaction: tx);
+
+            await tx.CommitAsync();
+        }
+        catch (NpgsqlException ex)
+        {
+            _logger.LogError(ex, "Failed to create tables");
             throw;
         }
     }

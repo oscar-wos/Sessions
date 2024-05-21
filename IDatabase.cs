@@ -5,7 +5,15 @@ namespace Sessions;
 public interface IDatabase
 {
     string BuildConnectionString(CoreConfig config);
+
+    Task<ServerSQL> GetServerAsync(string serverIp, ushort serverPort);
+    Task<MapSQL> GetMapAsync(string mapName);
+    Task<PlayerSQL> GetPlayerAsync(ulong steamId);
+    Task<SessionSQL> GetSessionAsync(int playerId, int serverId, int mapId, string ip);
+
     void CreateTablesAsync();
+    void UpdateSessionsBulkAsync(int[] sessionIds);
+    void UpdateSeenAsync(int playerId);
 }
 
 public interface IDatabaseFactory
