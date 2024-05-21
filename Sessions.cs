@@ -11,8 +11,8 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
 
     public override string ModuleName => "Sessions";
     public override string ModuleDescription => "Track player sessions";
-    public override string ModuleAuthor => "Oscar Wos-Szlaga";
-    public override string ModuleVersion => "1.2.0";
+    public override string ModuleAuthor => "github.com/oscar-wos/Sessions";
+    public override string ModuleVersion => "1.2.1";
 
     public required IDatabase _database;
     public readonly Ip _ip = new();
@@ -21,7 +21,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
     public CounterStrikeSharp.API.Modules.Timers.Timer? _timer;
     
     public void OnConfigParsed(CoreConfig config)
-	{
+    {
         Config = config;
 
         _database = new DatabaseFactory(config).Database;
@@ -44,7 +44,10 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
 
         RegisterListener<Listeners.OnClientDisconnect>(playerSlot =>
         {
-            _database.UpdateSeenAsync(_players[playerSlot].Id);
+            if (!_players.TryGetValue(playerSlot, out PlayerSQL? value))
+                return;
+
+            _database.UpdateSeenAsync(value.Id);
             _players.Remove(playerSlot);
         });
 
@@ -66,9 +69,6 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
     public async Task OnPlayerConnect(int playerSlot, ulong steamId, string ip)
     {
         _players[playerSlot] = await _database.GetPlayerAsync(steamId);
-        Console.WriteLine(_players[playerSlot].Id); // Debugging
-        
         _players[playerSlot].Session = await _database.GetSessionAsync(_players[playerSlot].Id, _server!.Id, _server.Map!.Id, ip);
-        Console.WriteLine(_players[playerSlot].Session!.Id); // Debugging
     }
 }
