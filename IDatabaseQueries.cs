@@ -7,6 +7,7 @@ public interface IDatabaseQueries
     string CreatePlayers { get; }
     string CreateSessions { get; }
     string CreateAliases { get; }
+    string CreateMessages { get; }
 
     string SelectServer { get; }
     string InsertServer { get; }
@@ -20,6 +21,9 @@ public interface IDatabaseQueries
     string InsertSession { get; }
     string UpdateSession { get; }
     string UpdateSeen { get; }
+
+    string InsertAlias { get; }
+    string InsertMessage { get; }
 }
 
 public abstract class Queries : IDatabaseQueries
@@ -29,6 +33,7 @@ public abstract class Queries : IDatabaseQueries
     public abstract string CreatePlayers { get; }
     public abstract string CreateSessions { get; }
     public abstract string CreateAliases { get; }
+    public abstract string CreateMessages { get; }
 
     public abstract string SelectServer { get; }
     public abstract string InsertServer { get; }
@@ -43,6 +48,9 @@ public abstract class Queries : IDatabaseQueries
     public abstract string UpdateSession { get; }
     public abstract string UpdateSeen { get; }
 
+    public abstract string InsertAlias { get; }
+    public abstract string InsertMessage { get; }
+
     public IEnumerable<string> GetCreateQueries()
     {
         yield return CreateServers;
@@ -50,6 +58,7 @@ public abstract class Queries : IDatabaseQueries
         yield return CreatePlayers;
         yield return CreateSessions;
         yield return CreateAliases;
+        yield return CreateMessages;
     }
 }
 

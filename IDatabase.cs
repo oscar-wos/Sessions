@@ -5,6 +5,7 @@ namespace Sessions;
 public interface IDatabase
 {
     string BuildConnectionString(CoreConfig config);
+    //string SerializeString(string value);
 
     Task<ServerSQL> GetServerAsync(string serverIp, ushort serverPort);
     Task<MapSQL> GetMapAsync(string mapName);
@@ -14,6 +15,9 @@ public interface IDatabase
     void CreateTablesAsync();
     void UpdateSessionsBulkAsync(int[] playerIds, int[] sessionIds);
     void UpdateSeenAsync(int playerId);
+
+    void InsertAliasAsync(int sessionId, int playerId, int serverId, int mapId, string alias);
+    void InsertMessageAsync(int sessionId, int playerId, int serverId, int mapId, MessageType messageType, string message);
 }
 
 public interface IDatabaseFactory

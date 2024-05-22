@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Cvars;
@@ -8,17 +9,6 @@ namespace Sessions;
 public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
 {
     public CoreConfig Config { get; set; } = new();
-
-    public override string ModuleName => "Sessions";
-    public override string ModuleDescription => "Track player sessions";
-    public override string ModuleAuthor => "github.com/oscar-wos/Sessions";
-    public override string ModuleVersion => "1.2.3";
-
-    public required IDatabase _database;
-    public readonly Ip _ip = new();
-    public ServerSQL? _server;
-    public Dictionary<int, PlayerSQL> _players = [];
-    public CounterStrikeSharp.API.Modules.Timers.Timer? _timer;
     
     public void OnConfigParsed(CoreConfig config)
     {
@@ -51,13 +41,28 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
             _players.Remove(playerSlot);
         });
 
+        RegisterEventHandler<EventPlayerChat>((@event, info) =>
+        {
+            CCSPlayerController? playerController = Utilities.GetPlayerFromUserid(@event.Userid);
+            
+            if (playerController == null || !playerController.IsValid || playerController.IsBot
+                || @event.Text == null || !_players.TryGetValue(playerController.Slot, out PlayerSQL? value)
+                || value.Session == null || _server.Map == null)
+                return HookResult.Continue;
+
+            MessageType messageType = @event.Teamonly ? MessageType.TeamChat : MessageType.Chat;
+            _database.InsertMessageAsync(value.Session.Id, value.Id, _server.Id, _server.Map.Id, messageType, @event.Text);
+
+            return HookResult.Continue;
+        }, HookMode.Post);
+
         _timer = AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
 
         if (!hotReload)
             return;
             
         _server.Map = _database.GetMapAsync(Server.MapName).GetAwaiter().GetResult();
-        Utilities.GetPlayers().Where(player => !player.IsBot).ToList().ForEach(async player => await OnPlayerConnect(player.Slot, player.SteamID, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]));
+        Utilities.GetPlayers().Where(player => player.IsValid && !player.IsBot).ToList().ForEach(async player => await OnPlayerConnect(player.Slot, player.SteamID, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]));
     }
     
     public void Timer_Repeat()

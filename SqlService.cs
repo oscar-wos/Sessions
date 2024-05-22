@@ -169,6 +169,33 @@ public class SqlService : IDatabase
             throw;
         }
     }
+
+    public void InsertAliasAsync(int sessionId, int playerId, int serverId, int mapId, string alias)
+    {
+        return;
+    }
+
+    public void InsertMessageAsync(int sessionId, int playerId, int serverId, int mapId, MessageType messageType, string message)
+    {
+        try
+        {
+            MySqlCommand command = new(_queries.InsertMessage, _connection);
+
+            command.Parameters.AddWithValue("@SessionId", sessionId);
+            command.Parameters.AddWithValue("@PlayerId", playerId);
+            command.Parameters.AddWithValue("@ServerId", serverId);
+            command.Parameters.AddWithValue("@MapId", mapId);
+            command.Parameters.AddWithValue("@MessageType", (int)messageType);
+            command.Parameters.AddWithValue("@Message", message);
+            
+            command.ExecuteNonQuery();
+        }
+        catch (MySqlException ex)
+        {
+            _logger.LogError(ex, "Error while inserting message");
+            throw;
+        }
+    }
 }
 
 public class SqlServiceQueries : Queries
@@ -208,7 +235,18 @@ public class SqlServiceQueries : Queries
         server_id TINYINT UNSIGNED NOT NULL,
         map_id SMALLINT UNSIGNED NOT NULL,
         timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        alias VARCHAR(255) NOT NULL
+        alias VARCHAR(64) NOT NULL COLLATE utf8_unicode_520_ci
+    )";
+
+    public override string CreateMessages => @"CREATE TABLE IF NOT EXISTS messages (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        session_id BIGINT UNSIGNED NOT NULL,
+        player_id INT UNSIGNED NOT NULL,
+        server_id TINYINT UNSIGNED NOT NULL,
+        map_id SMALLINT UNSIGNED NOT NULL,
+        timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        message_type TINYINT UNSIGNED NOT NULL,
+        message VARCHAR(128) NOT NULL COLLATE utf8_unicode_520_ci 
     )";
 
     public override string SelectServer => "SELECT id FROM servers WHERE server_ip = @ServerIp AND server_port = @ServerPort";
@@ -223,4 +261,7 @@ public class SqlServiceQueries : Queries
     public override string InsertSession => "INSERT INTO sessions (player_id, server_id, map_id, ip) VALUES (@PlayerId, @ServerId, @MapId, @Ip); SELECT last_insert_id()";
     public override string UpdateSession => "UPDATE sessions SET end_time = NOW() WHERE id = @SessionId";
     public override string UpdateSeen => "UPDATE players SET last_seen = NOW() WHERE id = @PlayerId";
+
+    public override string InsertAlias => "INSERT INTO aliases (session_id, player_id, server_id, map_id, alias) VALUES (@SessionId, @PlayerId, @ServerId, @MapId, @Alias)";
+    public override string InsertMessage => "INSERT INTO messages (session_id, player_id, server_id, map_id, message_type, message) VALUES (@SessionId, @PlayerId, @ServerId, @MapId, @MessageType, @Message)";
 }
