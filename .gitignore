@@ -3,3 +3,4 @@ obj/
 compiled/
 *.sln
 .vs/
+.vscode/

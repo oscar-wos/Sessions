@@ -133,12 +133,15 @@ public class PostgreService : IDatabase
         }
     }
 
-    public async void UpdateSessionsBulkAsync(int[] sessionIds)
+    public async void UpdateSessionsBulkAsync(int[] playerIds, int[] sessionIds)
     {
         await using NpgsqlTransaction tx = await _connection.BeginTransactionAsync();
 
         try
         {
+            foreach (int player in playerIds)
+                await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = player }, transaction: tx);
+
             foreach (int sessionId in sessionIds)
                 await _connection.ExecuteAsync(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
             
@@ -194,6 +197,16 @@ public class PostgreServiceQueries : Queries
         ip INET NOT NULL,
         start_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
         end_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )";
+
+    public override string CreateAliases => @"CREATE TABLE IF NOT EXISTS aliases (
+        id BIGSERIAL PRIMARY KEY,
+        session_id BIGINT NOT NULL,
+        player_id INT NOT NULL,
+        server_id SMALLINT NOT NULL,
+        map_id SMALLINT NOT NULL,
+        timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        alias VARCHAR(255) NOT NULL
     )";
 
     public override string SelectServer => "SELECT id FROM servers WHERE server_ip = CAST(@ServerIp as INET) AND server_port = @ServerPort";

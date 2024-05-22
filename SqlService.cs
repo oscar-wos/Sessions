@@ -136,12 +136,15 @@ public class SqlService : IDatabase
         }
     }
 
-    public async void UpdateSessionsBulkAsync(int[] sessionIds)
+    public async void UpdateSessionsBulkAsync(int[] playerIds, int[] sessionIds)
     {
         await using MySqlTransaction tx = await _connection.BeginTransactionAsync();
 
         try
         {
+            foreach (int player in playerIds)
+                await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = player }, transaction: tx);
+
             foreach (int sessionId in sessionIds)
                 _connection.Execute(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
             
@@ -196,6 +199,16 @@ public class SqlServiceQueries : Queries
         ip VARCHAR(15) NOT NULL,
         start_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         end_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )";
+
+    public override string CreateAliases => @"CREATE TABLE IF NOT EXISTS aliases (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        session_id BIGINT UNSIGNED NOT NULL,
+        player_id INT UNSIGNED NOT NULL,
+        server_id TINYINT UNSIGNED NOT NULL,
+        map_id SMALLINT UNSIGNED NOT NULL,
+        timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        alias VARCHAR(255) NOT NULL
     )";
 
     public override string SelectServer => "SELECT id FROM servers WHERE server_ip = @ServerIp AND server_port = @ServerPort";

@@ -6,6 +6,7 @@ public interface IDatabaseQueries
     string CreateMaps { get; }
     string CreatePlayers { get; }
     string CreateSessions { get; }
+    string CreateAliases { get; }
 
     string SelectServer { get; }
     string InsertServer { get; }
@@ -27,6 +28,7 @@ public abstract class Queries : IDatabaseQueries
     public abstract string CreateMaps { get; }
     public abstract string CreatePlayers { get; }
     public abstract string CreateSessions { get; }
+    public abstract string CreateAliases { get; }
 
     public abstract string SelectServer { get; }
     public abstract string InsertServer { get; }
@@ -47,6 +49,7 @@ public abstract class Queries : IDatabaseQueries
         yield return CreateMaps;
         yield return CreatePlayers;
         yield return CreateSessions;
+        yield return CreateAliases;
     }
 }
 

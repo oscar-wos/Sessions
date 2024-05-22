@@ -12,7 +12,7 @@ public interface IDatabase
     Task<SessionSQL> GetSessionAsync(int playerId, int serverId, int mapId, string ip);
 
     void CreateTablesAsync();
-    void UpdateSessionsBulkAsync(int[] sessionIds);
+    void UpdateSessionsBulkAsync(int[] playerIds, int[] sessionIds);
     void UpdateSeenAsync(int playerId);
 }
 

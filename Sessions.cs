@@ -12,7 +12,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
     public override string ModuleName => "Sessions";
     public override string ModuleDescription => "Track player sessions";
     public override string ModuleAuthor => "github.com/oscar-wos/Sessions";
-    public override string ModuleVersion => "1.2.2";
+    public override string ModuleVersion => "1.2.3";
 
     public required IDatabase _database;
     public readonly Ip _ip = new();
@@ -34,8 +34,8 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
         ushort port = (ushort)ConVar.Find("hostport")!.GetPrimitiveValue<int>();
         _server = _database!.GetServerAsync(ip, port).GetAwaiter().GetResult();
 
-        RegisterListener<Listeners.OnMapStart>(mapName =>
-            _server.Map = _database.GetMapAsync(mapName).GetAwaiter().GetResult()
+        RegisterListener<Listeners.OnMapStart>(async mapName =>
+            _server.Map = await _database.GetMapAsync(mapName)
         );
 
         RegisterListener<Listeners.OnClientAuthorized>(async (playerSlot, steamId) =>
@@ -57,13 +57,18 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
             return;
             
         _server.Map = _database.GetMapAsync(Server.MapName).GetAwaiter().GetResult();
-        Utilities.GetPlayers().Where(player => !player.IsBot).ToList().ForEach(player => OnPlayerConnect(player.Slot, player.SteamID, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]).GetAwaiter().GetResult());
+        Utilities.GetPlayers().Where(player => !player.IsBot).ToList().ForEach(async player => await OnPlayerConnect(player.Slot, player.SteamID, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]));
     }
     
     public void Timer_Repeat()
     {
-        int[] sessionIds = Utilities.GetPlayers().Where(player => _players.TryGetValue(player.Slot, out PlayerSQL? p) && p.Session != null).Select(player => _players[player.Slot].Session!.Id).ToArray();
-        _database.UpdateSessionsBulkAsync(sessionIds);
+        List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
+
+        PlayerSQL[] players = playerControllers.Where(player => _players.TryGetValue(player.Slot, out PlayerSQL? p)).Select(player => _players[player.Slot]).ToArray();
+        int[] playerIds = players.Select(player => player.Id).ToArray();
+        int[] sessionIds = playerControllers.Where(player => _players.TryGetValue(player.Slot, out PlayerSQL? p) && p.Session != null).Select(player => _players[player.Slot].Session!.Id).ToArray();
+        
+        _database.UpdateSessionsBulkAsync(playerIds, sessionIds);
     }
 
     public async Task OnPlayerConnect(int playerSlot, ulong steamId, string ip)
