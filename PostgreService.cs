@@ -173,7 +173,7 @@ public class PostgreService : IDatabase
         return;
     }
 
-    public void InsertMessageAsync(int sessionId, int playerId, int serverId, int mapId, MessageType messageType, string message)
+    public void InsertMessageAsync(int sessionId, int playerId, int mapId, MessageType messageType, string message)
     {
         try
         {
@@ -181,7 +181,6 @@ public class PostgreService : IDatabase
 
             command.Parameters.AddWithValue("@SessionId", sessionId);
             command.Parameters.AddWithValue("@PlayerId", playerId);
-            command.Parameters.AddWithValue("@ServerId", serverId);
             command.Parameters.AddWithValue("@MapId", mapId);
             command.Parameters.AddWithValue("@MessageType", (int)messageType);
             command.Parameters.AddWithValue("@Message", message);
@@ -230,21 +229,19 @@ public class PostgreServiceQueries : Queries
         id BIGSERIAL PRIMARY KEY,
         session_id BIGINT NOT NULL,
         player_id INT NOT NULL,
-        server_id SMALLINT NOT NULL,
         map_id SMALLINT NOT NULL,
         timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        alias VARCHAR(64) NOT NULL
+        alias VARCHAR(128)
     )";
 
     public override string CreateMessages => @"CREATE TABLE IF NOT EXISTS messages (
         id BIGSERIAL PRIMARY KEY,
         session_id BIGINT NOT NULL,
         player_id INT NOT NULL,
-        server_id SMALLINT NOT NULL,
         map_id SMALLINT NOT NULL,
         timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
         message_type SMALLINT NOT NULL,
-        message VARCHAR(128) NOT NULL
+        message VARCHAR(512)
     )";
 
     public override string SelectServer => "SELECT id FROM servers WHERE server_ip = CAST(@ServerIp as INET) AND server_port = @ServerPort";
@@ -260,6 +257,6 @@ public class PostgreServiceQueries : Queries
     public override string UpdateSession => "UPDATE sessions SET end_time = NOW() WHERE id = @SessionId";
     public override string UpdateSeen => "UPDATE players SET last_seen = NOW() WHERE id = @PlayerId";
 
-    public override string InsertAlias => "INSERT INTO aliases (session_id, player_id, server_id, map_id, alias) VALUES (@SessionId, @PlayerId, @ServerId, @MapId, @Alias)";
-    public override string InsertMessage => "INSERT INTO messages (session_id, player_id, server_id, map_id, message_type, message) VALUES (@SessionId, @PlayerId, @ServerId, @MapId, @MessageType, @Message)";
+    public override string InsertAlias => "INSERT INTO aliases (session_id, player_id, map_id, alias) VALUES (@SessionId, @PlayerId, @MapId, @Alias)";
+    public override string InsertMessage => "INSERT INTO messages (session_id, player_id, map_id, message_type, message) VALUES (@SessionId, @PlayerId, @MapId, @MessageType, @Message)";
 }

@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Cvars;
@@ -51,11 +50,11 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
                 return HookResult.Continue;
 
             MessageType messageType = @event.Teamonly ? MessageType.TeamChat : MessageType.Chat;
-            _database.InsertMessageAsync(value.Session.Id, value.Id, _server.Id, _server.Map.Id, messageType, @event.Text);
+            _database.InsertMessageAsync(value.Session.Id, value.Id, _server.Map.Id, messageType, @event.Text);
 
             return HookResult.Continue;
         }, HookMode.Post);
-
+        
         _timer = AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
 
         if (!hotReload)

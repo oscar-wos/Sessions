@@ -17,7 +17,7 @@ public interface IDatabase
     void UpdateSeenAsync(int playerId);
 
     void InsertAliasAsync(int sessionId, int playerId, int serverId, int mapId, string alias);
-    void InsertMessageAsync(int sessionId, int playerId, int serverId, int mapId, MessageType messageType, string message);
+    void InsertMessageAsync(int sessionId, int playerId, int mapId, MessageType messageType, string message);
 }
 
 public interface IDatabaseFactory
