@@ -115,6 +115,19 @@ public class PostgreService : IDatabase
         }
     }
 
+    public async Task<AliasSQL?> GetAliasAsync(int playerId)
+    {
+        try
+        {
+            return await _connection.QueryFirstOrDefaultAsync<AliasSQL>(_queries.SelectAlias, new { PlayerId = playerId });
+        }
+        catch (NpgsqlException ex)
+        {
+            _logger.LogError(ex, "Error while getting alias");
+            throw;
+        }
+    }
+
     public async void CreateTablesAsync()
     {
         try
@@ -155,11 +168,11 @@ public class PostgreService : IDatabase
         }
     }
 
-    public async void UpdateSeenAsync(int playerId)
+    public void UpdateSeen(int playerId)
     {
         try
         {
-            await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = playerId });
+            _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = playerId });
         }
         catch (NpgsqlException ex)
         {
@@ -168,12 +181,27 @@ public class PostgreService : IDatabase
         }
     }
 
-    public void InsertAliasAsync(int sessionId, int playerId, int serverId, int mapId, string alias)
+    public void InsertAlias(int sessionId, int playerId, int serverId, int mapId, string alias)
     {
-        return;
+        try
+        {
+            NpgsqlCommand command = new(_queries.InsertAlias, _connection);
+
+            command.Parameters.AddWithValue("@SessionId", sessionId);
+            command.Parameters.AddWithValue("@PlayerId", playerId);
+            command.Parameters.AddWithValue("@MapId", mapId);
+            command.Parameters.AddWithValue("@Alias", alias);
+            
+            command.ExecuteNonQuery();
+        }
+        catch (NpgsqlException ex)
+        {
+            _logger.LogError(ex, "Error while inserting alias");
+            throw;
+        }
     }
 
-    public void InsertMessageAsync(int sessionId, int playerId, int mapId, MessageType messageType, string message)
+    public void InsertMessage(int sessionId, int playerId, int mapId, MessageType messageType, string message)
     {
         try
         {
@@ -205,7 +233,7 @@ public class PostgreServiceQueries : Queries
 
     public override string CreateMaps => @"CREATE TABLE IF NOT EXISTS maps (
         id SMALLSERIAL PRIMARY KEY,
-        map_name VARCHAR(255) NOT NULL
+        map_name VARCHAR(256) NOT NULL
     )";
 
     public override string CreatePlayers => @"CREATE TABLE IF NOT EXISTS players (
@@ -231,7 +259,7 @@ public class PostgreServiceQueries : Queries
         player_id INT NOT NULL,
         map_id SMALLINT NOT NULL,
         timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        alias VARCHAR(128)
+        alias VARCHAR(256)
     )";
 
     public override string CreateMessages => @"CREATE TABLE IF NOT EXISTS messages (
@@ -257,6 +285,7 @@ public class PostgreServiceQueries : Queries
     public override string UpdateSession => "UPDATE sessions SET end_time = NOW() WHERE id = @SessionId";
     public override string UpdateSeen => "UPDATE players SET last_seen = NOW() WHERE id = @PlayerId";
 
+    public override string SelectAlias => "SELECT id, alias FROM aliases WHERE player_id = @PlayerId ORDER BY id DESC LIMIT 1";
     public override string InsertAlias => "INSERT INTO aliases (session_id, player_id, map_id, alias) VALUES (@SessionId, @PlayerId, @MapId, @Alias)";
     public override string InsertMessage => "INSERT INTO messages (session_id, player_id, map_id, message_type, message) VALUES (@SessionId, @PlayerId, @MapId, @MessageType, @Message)";
 }

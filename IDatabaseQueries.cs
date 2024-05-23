@@ -22,6 +22,7 @@ public interface IDatabaseQueries
     string UpdateSession { get; }
     string UpdateSeen { get; }
 
+    string SelectAlias { get; }
     string InsertAlias { get; }
     string InsertMessage { get; }
 }
@@ -48,6 +49,7 @@ public abstract class Queries : IDatabaseQueries
     public abstract string UpdateSession { get; }
     public abstract string UpdateSeen { get; }
 
+    public abstract string SelectAlias { get; }
     public abstract string InsertAlias { get; }
     public abstract string InsertMessage { get; }
 
@@ -86,4 +88,10 @@ public class PlayerSQL()
 public class SessionSQL()
 {
     public int Id { get; set; }
+}
+
+public class AliasSQL
+{
+    public int Id { get; set; }
+    public required string Alias { get; set; }
 }

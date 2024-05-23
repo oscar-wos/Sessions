@@ -27,16 +27,18 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
             _server.Map = await _database.GetMapAsync(mapName)
         );
 
-        RegisterListener<Listeners.OnClientAuthorized>(async (playerSlot, steamId) =>
-            await OnPlayerConnect(playerSlot, steamId.SteamId64, NativeAPI.GetPlayerIpAddress(playerSlot).Split(":")[0])
-        );
+        RegisterListener<Listeners.OnClientAuthorized>((playerSlot, steamId) =>
+        {
+            OnPlayerConnect(playerSlot, steamId.SteamId64, NativeAPI.GetPlayerIpAddress(playerSlot).Split(":")[0]).GetAwaiter().GetResult();
+            CheckAlias(playerSlot, Utilities.GetPlayerFromSlot(playerSlot)!.PlayerName).GetAwaiter().GetResult();
+        });
 
         RegisterListener<Listeners.OnClientDisconnect>(playerSlot =>
         {
             if (!_players.TryGetValue(playerSlot, out PlayerSQL? value))
                 return;
 
-            _database.UpdateSeenAsync(value.Id);
+            _database.UpdateSeen(value.Id);
             _players.Remove(playerSlot);
         });
 
@@ -50,7 +52,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
                 return HookResult.Continue;
 
             MessageType messageType = @event.Teamonly ? MessageType.TeamChat : MessageType.Chat;
-            _database.InsertMessageAsync(value.Session.Id, value.Id, _server.Map.Id, messageType, @event.Text);
+            _database.InsertMessage(value.Session.Id, value.Id, _server.Map.Id, messageType, @event.Text);
 
             return HookResult.Continue;
         }, HookMode.Post);
@@ -61,7 +63,11 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
             return;
             
         _server.Map = _database.GetMapAsync(Server.MapName).GetAwaiter().GetResult();
-        Utilities.GetPlayers().Where(player => player.IsValid && !player.IsBot).ToList().ForEach(async player => await OnPlayerConnect(player.Slot, player.SteamID, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]));
+
+        Utilities.GetPlayers().Where(player => player.IsValid && !player.IsBot).ToList().ForEach(player => {
+            OnPlayerConnect(player.Slot, player.SteamID, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]).GetAwaiter().GetResult();
+            CheckAlias(player.Slot, player.PlayerName).GetAwaiter().GetResult();
+        });
     }
     
     public void Timer_Repeat()
@@ -79,5 +85,16 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
     {
         _players[playerSlot] = await _database.GetPlayerAsync(steamId);
         _players[playerSlot].Session = await _database.GetSessionAsync(_players[playerSlot].Id, _server!.Id, _server.Map!.Id, ip);
+    }
+
+    public async Task CheckAlias(int playerSlot, string alias)
+    {
+        if (!_players.TryGetValue(playerSlot, out PlayerSQL? player))
+            return;
+        
+        AliasSQL? recentAlias = await _database.GetAliasAsync(player.Id);
+
+        if (recentAlias == null || recentAlias.Alias != alias)
+            _database.InsertAlias(player.Session!.Id, player.Id, _server!.Id, _server.Map!.Id, alias);
     }
 }

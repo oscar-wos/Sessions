@@ -5,7 +5,7 @@ public partial class Sessions
     public override string ModuleName => "Sessions";
     public override string ModuleDescription => "Track player sessions";
     public override string ModuleAuthor => "github.com/oscar-wos/Sessions";
-    public override string ModuleVersion => "1.2.5";
+    public override string ModuleVersion => "1.2.6";
 
     public required IDatabase _database;
     public readonly Ip _ip = new();

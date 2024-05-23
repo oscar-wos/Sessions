@@ -118,6 +118,19 @@ public class SqlService : IDatabase
         }
     }
 
+    public async Task<AliasSQL?> GetAliasAsync(int playerId)
+    {
+        try
+        {
+            return await _connection.QueryFirstOrDefaultAsync<AliasSQL>(_queries.SelectAlias, new { PlayerId = playerId });
+        }
+        catch (MySqlException ex)
+        {
+            _logger.LogError(ex, "Error while getting alias");
+            throw;
+        }
+    }
+
     public async void CreateTablesAsync()
     {
         try
@@ -146,7 +159,7 @@ public class SqlService : IDatabase
                 await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = player }, transaction: tx);
 
             foreach (int sessionId in sessionIds)
-                _connection.Execute(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
+                await _connection.ExecuteAsync(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
             
             await tx.CommitAsync();
         }
@@ -158,7 +171,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public void UpdateSeenAsync(int playerId) {
+    public void UpdateSeen(int playerId) {
         try
         {
             _connection.Execute(_queries.UpdateSeen, new { PlayerId = playerId });
@@ -170,12 +183,27 @@ public class SqlService : IDatabase
         }
     }
 
-    public void InsertAliasAsync(int sessionId, int playerId, int serverId, int mapId, string alias)
+    public void InsertAlias(int sessionId, int playerId, int serverId, int mapId, string alias)
     {
-        return;
+        try
+        {
+            MySqlCommand command = new(_queries.InsertAlias, _connection);
+
+            command.Parameters.AddWithValue("@SessionId", sessionId);
+            command.Parameters.AddWithValue("@PlayerId", playerId);
+            command.Parameters.AddWithValue("@MapId", mapId);
+            command.Parameters.AddWithValue("@Alias", alias);
+            
+            command.ExecuteNonQuery();
+        }
+        catch (MySqlException ex)
+        {
+            _logger.LogError(ex, "Error while inserting alias");
+            throw;
+        }
     }
 
-    public void InsertMessageAsync(int sessionId, int playerId, int mapId, MessageType messageType, string message)
+    public void InsertMessage(int sessionId, int playerId, int mapId, MessageType messageType, string message)
     {
         try
         {
@@ -207,7 +235,7 @@ public class SqlServiceQueries : Queries
 
     public override string CreateMaps => @"CREATE TABLE IF NOT EXISTS maps (
         id SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        map_name VARCHAR(32) NOT NULL
+        map_name VARCHAR(64) NOT NULL
     )";
 
     public override string CreatePlayers => @"CREATE TABLE IF NOT EXISTS players (
@@ -257,8 +285,9 @@ public class SqlServiceQueries : Queries
 
     public override string InsertSession => "INSERT INTO sessions (player_id, server_id, map_id, ip) VALUES (@PlayerId, @ServerId, @MapId, @Ip); SELECT last_insert_id()";
     public override string UpdateSession => "UPDATE sessions SET end_time = NOW() WHERE id = @SessionId";
-    public override string UpdateSeen => "UPDATE players SET last_seen = NOW() WHERE id = @PlayerId";
+    public override string UpdateSeen => "UPDATE players SET last_seen = NOW() WHERE id = @PlayerId"; 
 
+    public override string SelectAlias => "SELECT id, alias FROM aliases WHERE player_id = @PlayerId ORDER BY id DESC LIMIT 1";
     public override string InsertAlias => "INSERT INTO aliases (session_id, player_id, map_id, alias) VALUES (@SessionId, @PlayerId, @MapId, @Alias)";
     public override string InsertMessage => "INSERT INTO messages (session_id, player_id, map_id, message_type, message) VALUES (@SessionId, @PlayerId, @MapId, @MessageType, @Message)";
 }

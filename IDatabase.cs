@@ -11,13 +11,14 @@ public interface IDatabase
     Task<MapSQL> GetMapAsync(string mapName);
     Task<PlayerSQL> GetPlayerAsync(ulong steamId);
     Task<SessionSQL> GetSessionAsync(int playerId, int serverId, int mapId, string ip);
+    Task<AliasSQL?> GetAliasAsync(int playerId);
 
     void CreateTablesAsync();
     void UpdateSessionsBulkAsync(int[] playerIds, int[] sessionIds);
-    void UpdateSeenAsync(int playerId);
+    void UpdateSeen(int playerId);
 
-    void InsertAliasAsync(int sessionId, int playerId, int serverId, int mapId, string alias);
-    void InsertMessageAsync(int sessionId, int playerId, int mapId, MessageType messageType, string message);
+    void InsertAlias(int sessionId, int playerId, int serverId, int mapId, string alias);
+    void InsertMessage(int sessionId, int playerId, int mapId, MessageType messageType, string message);
 }
 
 public interface IDatabaseFactory
