@@ -39,7 +39,6 @@ public class PostgreService : IDatabase
             Username = config.DatabaseUser,
             Password = config.DatabasePassword,
             Database = config.DatabaseName,
-            KeepAlive = config.DatabaseKeepAlive,
             Pooling = true,
         };
 

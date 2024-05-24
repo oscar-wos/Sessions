@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Cvars;
@@ -29,8 +30,10 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
 
         RegisterListener<Listeners.OnClientAuthorized>((playerSlot, steamId) =>
         {
+            string playerName = Utilities.GetPlayerFromSlot(playerSlot)!.PlayerName;
+            
             OnPlayerConnect(playerSlot, steamId.SteamId64, NativeAPI.GetPlayerIpAddress(playerSlot).Split(":")[0]).GetAwaiter().GetResult();
-            CheckAlias(playerSlot, Utilities.GetPlayerFromSlot(playerSlot)!.PlayerName).GetAwaiter().GetResult();
+            CheckAlias(playerSlot, playerName).GetAwaiter().GetResult();
         });
 
         RegisterListener<Listeners.OnClientDisconnect>(playerSlot =>
@@ -58,10 +61,10 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
         }, HookMode.Post);
         
         _timer = AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
-
+        
         if (!hotReload)
             return;
-            
+        
         _server.Map = _database.GetMapAsync(Server.MapName).GetAwaiter().GetResult();
 
         Utilities.GetPlayers().Where(player => player.IsValid && !player.IsBot).ToList().ForEach(player => {
@@ -93,6 +96,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
             return;
         
         AliasSQL? recentAlias = await _database.GetAliasAsync(player.Id);
+        alias = Regex.Replace(alias, @"[0\\]x[\da-fA-F]{2}", string.Empty);
 
         if (recentAlias == null || recentAlias.Alias != alias)
             _database.InsertAlias(player.Session!.Id, player.Id, _server!.Id, _server.Map!.Id, alias);

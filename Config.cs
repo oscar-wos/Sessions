@@ -24,7 +24,4 @@ public class CoreConfig : BasePluginConfig
 
     [JsonPropertyName("DatabaseName")]
     public string DatabaseName { get; set; } = "";
-
-    [JsonPropertyName("DatabaseKeepAlive")]
-    public int DatabaseKeepAlive { get; set; } = 30;
 }

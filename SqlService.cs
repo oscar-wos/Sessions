@@ -39,7 +39,6 @@ public class SqlService : IDatabase
             UserID = config.DatabaseUser,
             Password = config.DatabasePassword,
             Database = config.DatabaseName,
-            Keepalive = (uint)config.DatabaseKeepAlive,
             AllowUserVariables = true,
             Pooling = true,
         };
@@ -285,7 +284,7 @@ public class SqlServiceQueries : Queries
 
     public override string InsertSession => "INSERT INTO sessions (player_id, server_id, map_id, ip) VALUES (@PlayerId, @ServerId, @MapId, @Ip); SELECT last_insert_id()";
     public override string UpdateSession => "UPDATE sessions SET end_time = NOW() WHERE id = @SessionId";
-    public override string UpdateSeen => "UPDATE players SET last_seen = NOW() WHERE id = @PlayerId"; 
+    public override string UpdateSeen => "UPDATE players SET last_seen = NOW() WHERE id = @PlayerId";
 
     public override string SelectAlias => "SELECT id, alias FROM aliases WHERE player_id = @PlayerId ORDER BY id DESC LIMIT 1";
     public override string InsertAlias => "INSERT INTO aliases (session_id, player_id, map_id, alias) VALUES (@SessionId, @PlayerId, @MapId, @Alias)";
