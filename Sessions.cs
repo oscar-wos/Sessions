@@ -24,8 +24,8 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
         ushort port = (ushort)ConVar.Find("hostport")!.GetPrimitiveValue<int>();
         _server = _database!.GetServerAsync(ip, port).GetAwaiter().GetResult();
 
-        RegisterListener<Listeners.OnMapStart>(async mapName =>
-            _server.Map = await _database.GetMapAsync(mapName)
+        RegisterListener<Listeners.OnMapStart>(mapName =>
+            _server.Map = _database.GetMapAsync(mapName).GetAwaiter().GetResult()
         );
 
         RegisterListener<Listeners.OnClientAuthorized>((playerSlot, steamId) =>
@@ -50,16 +50,16 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
             CCSPlayerController? playerController = Utilities.GetPlayerFromUserid(@event.Userid);
             
             if (playerController == null || !playerController.IsValid || playerController.IsBot
-                || @event.Text == null || !_players.TryGetValue(playerController.Slot, out PlayerSQL? value)
-                || value.Session == null || _server.Map == null)
+                || @event.Text == null || _server == null || _server.Map == null
+                || !_players.TryGetValue(playerController.Slot, out PlayerSQL? value) || value.Session == null)
                 return HookResult.Continue;
 
             MessageType messageType = @event.Teamonly ? MessageType.TeamChat : MessageType.Chat;
             _database.InsertMessage(value.Session.Id, value.Id, _server.Map.Id, messageType, @event.Text);
 
             return HookResult.Continue;
-        }, HookMode.Post);
-        
+        }, HookMode.Pre);
+
         _timer = AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
         
         if (!hotReload)
@@ -99,6 +99,6 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
         alias = Regex.Replace(alias, @"[0\\]x[\da-fA-F]{2}", string.Empty);
 
         if (recentAlias == null || recentAlias.Alias != alias)
-            _database.InsertAlias(player.Session!.Id, player.Id, _server!.Id, _server.Map!.Id, alias);
+            _database.InsertAlias(player.Session!.Id, player.Id, alias);
     }
 }

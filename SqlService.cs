@@ -154,8 +154,8 @@ public class SqlService : IDatabase
 
         try
         {
-            foreach (int player in playerIds)
-                await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = player }, transaction: tx);
+            foreach (int playerId in playerIds)
+                await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = playerId }, transaction: tx);
 
             foreach (int sessionId in sessionIds)
                 await _connection.ExecuteAsync(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
@@ -182,7 +182,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public void InsertAlias(int sessionId, int playerId, int serverId, int mapId, string alias)
+    public void InsertAlias(int sessionId, int playerId, string alias)
     {
         try
         {
@@ -190,7 +190,6 @@ public class SqlService : IDatabase
 
             command.Parameters.AddWithValue("@SessionId", sessionId);
             command.Parameters.AddWithValue("@PlayerId", playerId);
-            command.Parameters.AddWithValue("@MapId", mapId);
             command.Parameters.AddWithValue("@Alias", alias);
             
             command.ExecuteNonQuery();
@@ -258,7 +257,6 @@ public class SqlServiceQueries : Queries
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         session_id BIGINT UNSIGNED NOT NULL,
         player_id INT UNSIGNED NOT NULL,
-        map_id SMALLINT UNSIGNED NOT NULL,
         timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         alias VARCHAR(64) COLLATE utf8_unicode_520_ci
     )";
@@ -287,6 +285,6 @@ public class SqlServiceQueries : Queries
     public override string UpdateSeen => "UPDATE players SET last_seen = NOW() WHERE id = @PlayerId";
 
     public override string SelectAlias => "SELECT id, alias FROM aliases WHERE player_id = @PlayerId ORDER BY id DESC LIMIT 1";
-    public override string InsertAlias => "INSERT INTO aliases (session_id, player_id, map_id, alias) VALUES (@SessionId, @PlayerId, @MapId, @Alias)";
+    public override string InsertAlias => "INSERT INTO aliases (session_id, player_id, alias) VALUES (@SessionId, @PlayerId, @Alias)";
     public override string InsertMessage => "INSERT INTO messages (session_id, player_id, map_id, message_type, message) VALUES (@SessionId, @PlayerId, @MapId, @MessageType, @Message)";
 }
