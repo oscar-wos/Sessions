@@ -9,15 +9,15 @@ Supports postgre + mysql
   "DatabaseType": "postgresql",
 }
 ```
-## Aliases
-![image](https://github.com/oscar-wos/Sessions/assets/29248751/143e4679-e1ca-40f0-b92c-38e748e42c83)
+### Aliases
+![image](https://github.com/oscar-wos/Sessions/assets/29248751/983c65eb-746a-4759-9b39-76efded4177b)
 
-## Players
-![image](https://github.com/oscar-wos/Sessions/assets/29248751/206e240d-592a-46b6-95dc-4ccc0a503d5c)
+### Players
+![image](https://github.com/oscar-wos/Sessions/assets/29248751/7edd304a-6b4c-4d22-98b5-54cd24cba64c)
 
-## Messages
-![image](https://github.com/oscar-wos/Sessions/assets/29248751/60bc72d9-901a-453d-a01c-1f614098ec06)
+### Messages
+![image](https://github.com/oscar-wos/Sessions/assets/29248751/097d1018-9c78-418e-8583-1d454721a800)
 
-## Sessions
-![image](https://github.com/oscar-wos/Sessions/assets/29248751/5e89b204-07d1-4a3c-ae0b-b79750e85d3e)
+### Sessions
+![image](https://github.com/oscar-wos/Sessions/assets/29248751/278eadbd-e76c-4801-ab07-f9d4933955af)
 ![image](https://github.com/oscar-wos/Sessions/assets/29248751/331a4858-6611-476a-ba8e-ddd43fa6ede0)
