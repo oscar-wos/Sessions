@@ -66,7 +66,7 @@ public abstract class Queries : IDatabaseQueries
 
 public class ServerSQL()
 {
-    public int Id { get; set; }
+    public short Id { get; set; }
 
     public MapSQL? Map { get; set; }
 }
@@ -87,7 +87,7 @@ public class PlayerSQL()
 
 public class SessionSQL()
 {
-    public int Id { get; set; }
+    public long Id { get; set; }
 }
 
 public class AliasSQL

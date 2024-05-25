@@ -145,7 +145,7 @@ public class PostgreService : IDatabase
         }
     }
 
-    public async void UpdateSessionsBulkAsync(int[] playerIds, int[] sessionIds)
+    public async void UpdateSessionsBulkAsync(int[] playerIds, long[] sessionIds)
     {
         await using NpgsqlTransaction tx = await _connection.BeginTransactionAsync();
 
@@ -154,7 +154,7 @@ public class PostgreService : IDatabase
             foreach (int playerId in playerIds)
                 await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = playerId }, transaction: tx);
 
-            foreach (int sessionId in sessionIds)
+            foreach (long sessionId in sessionIds)
                 await _connection.ExecuteAsync(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
             
             await tx.CommitAsync();
@@ -180,7 +180,7 @@ public class PostgreService : IDatabase
         }
     }
 
-    public void InsertAlias(int sessionId, int playerId, string alias)
+    public void InsertAlias(long sessionId, int playerId, string alias)
     {
         try
         {
@@ -199,7 +199,7 @@ public class PostgreService : IDatabase
         }
     }
 
-    public void InsertMessage(int sessionId, int playerId, int mapId, MessageType messageType, string message)
+    public void InsertMessage(long sessionId, int playerId, MessageType messageType, string message)
     {
         try
         {
@@ -207,7 +207,6 @@ public class PostgreService : IDatabase
 
             command.Parameters.AddWithValue("@SessionId", sessionId);
             command.Parameters.AddWithValue("@PlayerId", playerId);
-            command.Parameters.AddWithValue("@MapId", mapId);
             command.Parameters.AddWithValue("@MessageType", (int)messageType);
             command.Parameters.AddWithValue("@Message", message);
             
@@ -263,7 +262,6 @@ public class PostgreServiceQueries : Queries
         id BIGSERIAL PRIMARY KEY,
         session_id BIGINT NOT NULL,
         player_id INT NOT NULL,
-        map_id SMALLINT NOT NULL,
         timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
         message_type SMALLINT NOT NULL,
         message VARCHAR(512)
@@ -284,5 +282,5 @@ public class PostgreServiceQueries : Queries
 
     public override string SelectAlias => "SELECT id, alias FROM aliases WHERE player_id = @PlayerId ORDER BY id DESC LIMIT 1";
     public override string InsertAlias => "INSERT INTO aliases (session_id, player_id, alias) VALUES (@SessionId, @PlayerId, @Alias)";
-    public override string InsertMessage => "INSERT INTO messages (session_id, player_id, map_id, message_type, message) VALUES (@SessionId, @PlayerId, @MapId, @MessageType, @Message)";
+    public override string InsertMessage => "INSERT INTO messages (session_id, player_id, message_type, message) VALUES (@SessionId, @PlayerId, @MessageType, @Message)";
 }

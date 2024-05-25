@@ -50,12 +50,11 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
             CCSPlayerController? playerController = Utilities.GetPlayerFromUserid(@event.Userid);
             
             if (playerController == null || !playerController.IsValid || playerController.IsBot
-                || @event.Text == null || _server == null || _server.Map == null
-                || !_players.TryGetValue(playerController.Slot, out PlayerSQL? value) || value.Session == null)
+                || @event.Text == null || !_players.TryGetValue(playerController.Slot, out PlayerSQL? value) || value.Session == null)
                 return HookResult.Continue;
 
             MessageType messageType = @event.Teamonly ? MessageType.TeamChat : MessageType.Chat;
-            _database.InsertMessage(value.Session.Id, value.Id, _server.Map.Id, messageType, @event.Text);
+            _database.InsertMessage(value.Session.Id, value.Id, messageType, @event.Text);
 
             return HookResult.Continue;
         }, HookMode.Pre);
@@ -79,7 +78,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
 
         PlayerSQL[] players = playerControllers.Where(player => _players.TryGetValue(player.Slot, out PlayerSQL? p)).Select(player => _players[player.Slot]).ToArray();
         int[] playerIds = players.Select(player => player.Id).ToArray();
-        int[] sessionIds = playerControllers.Where(player => _players.TryGetValue(player.Slot, out PlayerSQL? p) && p.Session != null).Select(player => _players[player.Slot].Session!.Id).ToArray();
+        long[] sessionIds = players.Where(player => player.Session != null).Select(player => player.Session!.Id).ToArray();
         
         _database.UpdateSessionsBulkAsync(playerIds, sessionIds);
     }
@@ -96,7 +95,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
             return;
         
         AliasSQL? recentAlias = await _database.GetAliasAsync(player.Id);
-        alias = Regex.Replace(alias, @"[0\\]x[\da-fA-F]{2}", string.Empty);
+        //alias = Regex.Replace(alias, @"[\\]x[\dA-F]{2}", string.Empty);
 
         if (recentAlias == null || recentAlias.Alias != alias)
             _database.InsertAlias(player.Session!.Id, player.Id, alias);

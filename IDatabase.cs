@@ -13,11 +13,11 @@ public interface IDatabase
     Task<AliasSQL?> GetAliasAsync(int playerId);
 
     void CreateTablesAsync();
-    void UpdateSessionsBulkAsync(int[] playerIds, int[] sessionIds);
+    void UpdateSessionsBulkAsync(int[] playerIds, long[] sessionIds);
     void UpdateSeen(int playerId);
 
-    void InsertAlias(int sessionId, int playerId, string alias);
-    void InsertMessage(int sessionId, int playerId, int mapId, MessageType messageType, string message);
+    void InsertAlias(long sessionId, int playerId, string alias);
+    void InsertMessage(long sessionId, int playerId, MessageType messageType, string message);
 }
 
 public interface IDatabaseFactory

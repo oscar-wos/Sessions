@@ -148,7 +148,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public async void UpdateSessionsBulkAsync(int[] playerIds, int[] sessionIds)
+    public async void UpdateSessionsBulkAsync(int[] playerIds, long[] sessionIds)
     {
         await using MySqlTransaction tx = await _connection.BeginTransactionAsync();
 
@@ -157,7 +157,7 @@ public class SqlService : IDatabase
             foreach (int playerId in playerIds)
                 await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = playerId }, transaction: tx);
 
-            foreach (int sessionId in sessionIds)
+            foreach (long sessionId in sessionIds)
                 await _connection.ExecuteAsync(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
             
             await tx.CommitAsync();
@@ -182,7 +182,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public void InsertAlias(int sessionId, int playerId, string alias)
+    public void InsertAlias(long sessionId, int playerId, string alias)
     {
         try
         {
@@ -201,7 +201,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public void InsertMessage(int sessionId, int playerId, int mapId, MessageType messageType, string message)
+    public void InsertMessage(long sessionId, int playerId, MessageType messageType, string message)
     {
         try
         {
@@ -209,7 +209,6 @@ public class SqlService : IDatabase
 
             command.Parameters.AddWithValue("@SessionId", sessionId);
             command.Parameters.AddWithValue("@PlayerId", playerId);
-            command.Parameters.AddWithValue("@MapId", mapId);
             command.Parameters.AddWithValue("@MessageType", (int)messageType);
             command.Parameters.AddWithValue("@Message", message);
 
@@ -265,7 +264,6 @@ public class SqlServiceQueries : Queries
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         session_id BIGINT UNSIGNED NOT NULL,
         player_id INT UNSIGNED NOT NULL,
-        map_id SMALLINT UNSIGNED NOT NULL,
         timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         message_type TINYINT UNSIGNED NOT NULL,
         message VARCHAR(128) COLLATE utf8_unicode_520_ci
@@ -286,5 +284,5 @@ public class SqlServiceQueries : Queries
 
     public override string SelectAlias => "SELECT id, alias FROM aliases WHERE player_id = @PlayerId ORDER BY id DESC LIMIT 1";
     public override string InsertAlias => "INSERT INTO aliases (session_id, player_id, alias) VALUES (@SessionId, @PlayerId, @Alias)";
-    public override string InsertMessage => "INSERT INTO messages (session_id, player_id, map_id, message_type, message) VALUES (@SessionId, @PlayerId, @MapId, @MessageType, @Message)";
+    public override string InsertMessage => "INSERT INTO messages (session_id, player_id, message_type, message) VALUES (@SessionId, @PlayerId, @MessageType, @Message)";
 }
