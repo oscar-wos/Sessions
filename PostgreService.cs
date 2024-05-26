@@ -145,11 +145,11 @@ public class PostgreService : IDatabase
         }
     }
 
-    public void UpdateSeen(int playerId)
+    public async void UpdateSeen(int playerId)
     {
         try
         {
-            _connection.Execute(_queries.UpdateSeen, new { PlayerId = playerId });
+            await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = playerId });
         }
         catch (NpgsqlException ex)
         {
@@ -158,29 +158,29 @@ public class PostgreService : IDatabase
         }
     }
 
-    public void UpdateSessions(List<int> playerIds, List<long> sessionIds)
+    public async void UpdateSessions(List<int> playerIds, List<long> sessionIds)
     {
-        NpgsqlTransaction tx = _connection.BeginTransaction();
+        NpgsqlTransaction tx = await _connection.BeginTransactionAsync();
 
         try
         {
             foreach (int playerId in playerIds)
-                _connection.Execute(_queries.UpdateSeen, new { PlayerId = playerId }, transaction: tx);
+                await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = playerId }, transaction: tx);
 
             foreach (long sessionId in sessionIds)
-                _connection.Execute(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
+                await _connection.ExecuteAsync(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
 
-            tx.Commit();
+            await tx.CommitAsync();
         }
         catch (NpgsqlException ex)
         {
-            tx.Rollback();
+            await tx.RollbackAsync();
             _logger.LogError(ex, "Error while updating sessions bulk");
             throw;
         }
     }
 
-    public void InsertAlias(long sessionId, int playerId, string alias)
+    public async void InsertAlias(long sessionId, int playerId, string alias)
     {
         try
         {
@@ -190,7 +190,7 @@ public class PostgreService : IDatabase
             command.Parameters.AddWithValue("@PlayerId", playerId);
             command.Parameters.AddWithValue("@Alias", alias);
 
-            command.ExecuteNonQuery();
+            await command.ExecuteNonQueryAsync();
         }
         catch (NpgsqlException ex)
         {
@@ -199,7 +199,7 @@ public class PostgreService : IDatabase
         }
     }
 
-    public void InsertMessage(long sessionId, int playerId, MessageType messageType, string message)
+    public async void InsertMessage(long sessionId, int playerId, MessageType messageType, string message)
     {
         try
         {
@@ -210,7 +210,7 @@ public class PostgreService : IDatabase
             command.Parameters.AddWithValue("@MessageType", (int)messageType);
             command.Parameters.AddWithValue("@Message", message);
 
-            command.ExecuteNonQuery();
+            await command.ExecuteNonQueryAsync();
         }
         catch (NpgsqlException ex)
         {

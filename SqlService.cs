@@ -148,10 +148,10 @@ public class SqlService : IDatabase
         }
     }
 
-    public void UpdateSeen(int playerId) {
+    public async void UpdateSeen(int playerId) {
         try
         {
-            _connection.Execute(_queries.UpdateSeen, new { PlayerId = playerId });
+            await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = playerId });
         }
         catch (MySqlException ex)
         {
@@ -160,29 +160,29 @@ public class SqlService : IDatabase
         }
     }
 
-    public void UpdateSessions(List<int> playerIds, List<long> sessionIds)
+    public async void UpdateSessions(List<int> playerIds, List<long> sessionIds)
     {
-        MySqlTransaction tx = _connection.BeginTransaction();
+        await using MySqlTransaction tx = await _connection.BeginTransactionAsync();
 
         try
         {
             foreach (int playerId in playerIds)
-                _connection.Execute(_queries.UpdateSeen, new { PlayerId = playerId }, transaction: tx);
+                await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = playerId }, transaction: tx);
 
             foreach (long sessionId in sessionIds)
-                _connection.Execute(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
+                await _connection.ExecuteAsync(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
 
-            tx.Commit();
+            await tx.CommitAsync();
         }
         catch (MySqlException ex)
         {
-            tx.Rollback();
+            await tx.RollbackAsync();
             _logger.LogError(ex, "Error while updating sessions");
             throw;
         }
     }
 
-    public void InsertAlias(long sessionId, int playerId, string alias)
+    public async void InsertAlias(long sessionId, int playerId, string alias)
     {
         try
         {
@@ -192,7 +192,7 @@ public class SqlService : IDatabase
             command.Parameters.AddWithValue("@PlayerId", playerId);
             command.Parameters.AddWithValue("@Alias", alias);
 
-            command.ExecuteNonQuery();
+            await command.ExecuteNonQueryAsync();
         }
         catch (MySqlException ex)
         {
@@ -201,7 +201,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public void InsertMessage(long sessionId, int playerId, MessageType messageType, string message)
+    public async void InsertMessage(long sessionId, int playerId, MessageType messageType, string message)
     {
         try
         {
@@ -212,7 +212,7 @@ public class SqlService : IDatabase
             command.Parameters.AddWithValue("@MessageType", (int)messageType);
             command.Parameters.AddWithValue("@Message", message);
 
-            command.ExecuteNonQuery();
+            await command.ExecuteNonQueryAsync();
         }
         catch (MySqlException ex)
         {

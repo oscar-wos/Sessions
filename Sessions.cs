@@ -67,6 +67,9 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
         foreach (CCSPlayerController player in Utilities.GetPlayers())
         {
+            if (!IsValidPlayer(player))
+                continue;
+
             OnPlayerConnect(player.Slot, player.SteamID, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]).GetAwaiter().GetResult();
             CheckAlias(player.Slot, player.PlayerName).GetAwaiter().GetResult();
         }
@@ -96,7 +99,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
         foreach (CCSPlayerController player in Utilities.GetPlayers())
         {
-            if (!_players.TryGetValue(player.Slot, out PlayerSQL? value))
+            if (!IsValidPlayer(player) || !_players.TryGetValue(player.Slot, out PlayerSQL? value))
                 continue;
 
             playerIds.Add(value.Id);
