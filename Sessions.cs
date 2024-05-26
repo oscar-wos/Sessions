@@ -11,17 +11,17 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
     public void OnConfigParsed(SessionsConfig config)
     {
-        Config = config;
-
         _database = new DatabaseFactory(config).Database;
-        _database.CreateTablesAsync().GetAwaiter().GetResult();
     }
 
     public override void Load(bool hotReload)
     {
         string ip = _ip.GetPublicIp();
         ushort port = (ushort)ConVar.Find("hostport")!.GetPrimitiveValue<int>();
-        _server = _database!.GetServerAsync(ip, port).GetAwaiter().GetResult();
+
+        _database.CreateTablesAsync().GetAwaiter().GetResult();
+        _server = _database.GetServerAsync(ip, port).GetAwaiter().GetResult();
+        _timer = AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
 
         RegisterListener<Listeners.OnMapStart>(mapName =>
             _server.Map = _database.GetMapAsync(mapName).GetAwaiter().GetResult()
@@ -29,10 +29,13 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
         RegisterListener<Listeners.OnClientAuthorized>((playerSlot, steamId) =>
         {
-            string playerName = Utilities.GetPlayerFromSlot(playerSlot)!.PlayerName;
+            CCSPlayerController? player = Utilities.GetPlayerFromSlot(playerSlot);
+
+            if (!IsValidPlayer(player))
+                return;
 
             OnPlayerConnect(playerSlot, steamId.SteamId64, NativeAPI.GetPlayerIpAddress(playerSlot).Split(":")[0]).GetAwaiter().GetResult();
-            CheckAlias(playerSlot, playerName).GetAwaiter().GetResult();
+            CheckAlias(playerSlot, player!.PlayerName).GetAwaiter().GetResult();
         });
 
         RegisterListener<Listeners.OnClientDisconnect>(playerSlot =>
@@ -46,40 +49,27 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
         RegisterEventHandler<EventPlayerChat>((@event, info) =>
         {
-            CCSPlayerController? playerController = Utilities.GetPlayerFromUserid(@event.Userid);
+            CCSPlayerController? player = Utilities.GetPlayerFromUserid(@event.Userid);
 
-            if (playerController == null || !playerController.IsValid || playerController.IsBot
-                || @event.Text == null || !_players.TryGetValue(playerController.Slot, out PlayerSQL? value) || value.Session == null)
+            if (!IsValidPlayer(player) || !_players.TryGetValue(player!.Slot, out PlayerSQL? value) || value.Session == null)
                 return HookResult.Continue;
 
             MessageType messageType = @event.Teamonly ? MessageType.TeamChat : MessageType.Chat;
             _database.InsertMessage(value.Session.Id, value.Id, messageType, @event.Text);
 
             return HookResult.Continue;
-        }, HookMode.Pre);
-
-        _timer = AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
+        });
 
         if (!hotReload)
             return;
 
         _server.Map = _database.GetMapAsync(Server.MapName).GetAwaiter().GetResult();
 
-        Utilities.GetPlayers().Where(player => player.IsValid && !player.IsBot).ToList().ForEach(player => {
+        Utilities.GetPlayers().Where(IsValidPlayer).ToList().ForEach(player =>
+        {
             OnPlayerConnect(player.Slot, player.SteamID, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]).GetAwaiter().GetResult();
             CheckAlias(player.Slot, player.PlayerName).GetAwaiter().GetResult();
         });
-    }
-
-    public void Timer_Repeat()
-    {
-        List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
-
-        PlayerSQL[] players = playerControllers.Where(player => _players.TryGetValue(player.Slot, out PlayerSQL? p)).Select(player => _players[player.Slot]).ToArray();
-        int[] playerIds = players.Select(player => player.Id).ToArray();
-        long[] sessionIds = players.Select(player => player.Session!.Id).ToArray();
-
-        _database.UpdateSessionsBulkAsync(playerIds, sessionIds);
     }
 
     public async Task OnPlayerConnect(int playerSlot, ulong steamId, string ip)
@@ -90,12 +80,35 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
     public async Task CheckAlias(int playerSlot, string alias)
     {
-        if (!_players.TryGetValue(playerSlot, out PlayerSQL? player))
+        if (!_players.TryGetValue(playerSlot, out PlayerSQL? value))
             return;
 
-        AliasSQL? recentAlias = await _database.GetAliasAsync(player.Id);
+        AliasSQL? recentAlias = await _database.GetAliasAsync(value.Id);
 
         if (recentAlias == null || recentAlias.Alias != alias)
-            _database.InsertAlias(player.Session!.Id, player.Id, alias);
+            _database.InsertAlias(value.Session!.Id, value.Id, alias);
+    }
+
+    public void Timer_Repeat()
+    {
+        IEnumerable<CCSPlayerController> players = Utilities.GetPlayers().Where(IsValidPlayer);
+        List<int> playerIds = [];
+        List<long> sessionIds = [];
+
+        foreach (CCSPlayerController player in players)
+        {
+            if (!_players.TryGetValue(player.Slot, out PlayerSQL? value))
+                continue;
+
+            playerIds.Add(value.Id);
+            sessionIds.Add(value.Session!.Id);
+        }
+
+        _database.UpdateSessions(playerIds, sessionIds);
+    }
+
+    private static bool IsValidPlayer(CCSPlayerController? player)
+    {
+        return player != null && player.IsValid && !player.IsBot && !player.IsHLTV;
     }
 }

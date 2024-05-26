@@ -13,8 +13,8 @@ public interface IDatabase
     Task<SessionSQL> GetSessionAsync(int playerId, int serverId, int mapId, string ip);
     Task<AliasSQL?> GetAliasAsync(int playerId);
 
-    void UpdateSessionsBulkAsync(int[] playerIds, long[] sessionIds);
     void UpdateSeen(int playerId);
+    void UpdateSessions(List<int> playerIds, List<long> sessionIds);
 
     void InsertAlias(long sessionId, int playerId, string alias);
     void InsertMessage(long sessionId, int playerId, MessageType messageType, string message);

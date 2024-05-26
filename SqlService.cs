@@ -46,6 +46,24 @@ public class SqlService : IDatabase
         return builder.ConnectionString;
     }
 
+    public async Task CreateTablesAsync()
+    {
+        try
+        {
+            await using MySqlTransaction tx = await _connection.BeginTransactionAsync();
+
+            foreach (string query in _queries.GetCreateQueries())
+                await _connection.ExecuteAsync(query, transaction: tx);
+
+            await tx.CommitAsync();
+        }
+        catch (MySqlException ex)
+        {
+            _logger.LogError(ex, "Failed to create tables");
+            throw;
+        }
+    }
+
     public async Task<ServerSQL> GetServerAsync(string serverIp, ushort serverPort)
     {
         try
@@ -130,46 +148,6 @@ public class SqlService : IDatabase
         }
     }
 
-    public async Task CreateTablesAsync()
-    {
-        try
-        {
-            await using MySqlTransaction tx = await _connection.BeginTransactionAsync();
-
-            foreach (string query in _queries.GetCreateQueries())
-                await _connection.ExecuteAsync(query, transaction: tx);
-
-            await tx.CommitAsync();
-        }
-        catch (MySqlException ex)
-        {
-            _logger.LogError(ex, "Failed to create tables");
-            throw;
-        }
-    }
-
-    public async void UpdateSessionsBulkAsync(int[] playerIds, long[] sessionIds)
-    {
-        await using MySqlTransaction tx = await _connection.BeginTransactionAsync();
-
-        try
-        {
-            foreach (int playerId in playerIds)
-                await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = playerId }, transaction: tx);
-
-            foreach (long sessionId in sessionIds)
-                await _connection.ExecuteAsync(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
-
-            await tx.CommitAsync();
-        }
-        catch (MySqlException ex)
-        {
-            await tx.RollbackAsync();
-            _logger.LogError(ex, "Error while updating sessions");
-            throw;
-        }
-    }
-
     public void UpdateSeen(int playerId) {
         try
         {
@@ -178,6 +156,28 @@ public class SqlService : IDatabase
         catch (MySqlException ex)
         {
             _logger.LogError(ex, "Error while updating seen");
+            throw;
+        }
+    }
+
+    public void UpdateSessions(List<int> playerIds, List<long> sessionIds)
+    {
+        MySqlTransaction tx = _connection.BeginTransaction();
+
+        try
+        {
+            foreach (int playerId in playerIds)
+                _connection.Execute(_queries.UpdateSeen, new { PlayerId = playerId }, transaction: tx);
+
+            foreach (long sessionId in sessionIds)
+                _connection.Execute(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
+
+            tx.Commit();
+        }
+        catch (MySqlException ex)
+        {
+            tx.Rollback();
+            _logger.LogError(ex, "Error while updating sessions");
             throw;
         }
     }
@@ -278,9 +278,9 @@ public class SqlServiceQueries : Queries
     public override string SelectPlayer => "SELECT id FROM players WHERE steam_id = @SteamId";
     public override string InsertPlayer => "INSERT INTO players (steam_id) VALUES (@SteamId)";
 
-    public override string InsertSession => "INSERT INTO sessions (player_id, server_id, map_id, ip) VALUES (@PlayerId, @ServerId, @MapId, @Ip); SELECT last_insert_id()";
-    public override string UpdateSession => "UPDATE sessions SET end_time = NOW() WHERE id = @SessionId";
     public override string UpdateSeen => "UPDATE players SET last_seen = NOW() WHERE id = @PlayerId";
+    public override string UpdateSession => "UPDATE sessions SET end_time = NOW() WHERE id = @SessionId";
+    public override string InsertSession => "INSERT INTO sessions (player_id, server_id, map_id, ip) VALUES (@PlayerId, @ServerId, @MapId, @Ip); SELECT last_insert_id()";
 
     public override string SelectAlias => "SELECT id, alias FROM aliases WHERE player_id = @PlayerId ORDER BY id DESC LIMIT 1";
     public override string InsertAlias => "INSERT INTO aliases (session_id, player_id, alias) VALUES (@SessionId, @PlayerId, @Alias)";
