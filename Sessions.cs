@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Cvars;
@@ -6,16 +5,16 @@ using CounterStrikeSharp.API.Modules.Timers;
 
 namespace Sessions;
 
-public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
+public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 {
-    public CoreConfig Config { get; set; } = new();
-    
-    public void OnConfigParsed(CoreConfig config)
+    public SessionsConfig Config { get; set; } = new();
+
+    public void OnConfigParsed(SessionsConfig config)
     {
         Config = config;
 
         _database = new DatabaseFactory(config).Database;
-        _database.CreateTablesAsync();
+        _database.CreateTablesAsync().GetAwaiter().GetResult();
     }
 
     public override void Load(bool hotReload)
@@ -31,7 +30,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
         RegisterListener<Listeners.OnClientAuthorized>((playerSlot, steamId) =>
         {
             string playerName = Utilities.GetPlayerFromSlot(playerSlot)!.PlayerName;
-            
+
             OnPlayerConnect(playerSlot, steamId.SteamId64, NativeAPI.GetPlayerIpAddress(playerSlot).Split(":")[0]).GetAwaiter().GetResult();
             CheckAlias(playerSlot, playerName).GetAwaiter().GetResult();
         });
@@ -48,7 +47,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
         RegisterEventHandler<EventPlayerChat>((@event, info) =>
         {
             CCSPlayerController? playerController = Utilities.GetPlayerFromUserid(@event.Userid);
-            
+
             if (playerController == null || !playerController.IsValid || playerController.IsBot
                 || @event.Text == null || !_players.TryGetValue(playerController.Slot, out PlayerSQL? value) || value.Session == null)
                 return HookResult.Continue;
@@ -60,10 +59,10 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
         }, HookMode.Pre);
 
         _timer = AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
-        
+
         if (!hotReload)
             return;
-        
+
         _server.Map = _database.GetMapAsync(Server.MapName).GetAwaiter().GetResult();
 
         Utilities.GetPlayers().Where(player => player.IsValid && !player.IsBot).ToList().ForEach(player => {
@@ -71,15 +70,15 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
             CheckAlias(player.Slot, player.PlayerName).GetAwaiter().GetResult();
         });
     }
-    
+
     public void Timer_Repeat()
     {
         List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
 
         PlayerSQL[] players = playerControllers.Where(player => _players.TryGetValue(player.Slot, out PlayerSQL? p)).Select(player => _players[player.Slot]).ToArray();
         int[] playerIds = players.Select(player => player.Id).ToArray();
-        long[] sessionIds = players.Where(player => player.Session != null).Select(player => player.Session!.Id).ToArray();
-        
+        long[] sessionIds = players.Select(player => player.Session!.Id).ToArray();
+
         _database.UpdateSessionsBulkAsync(playerIds, sessionIds);
     }
 
@@ -93,9 +92,8 @@ public partial class Sessions : BasePlugin, IPluginConfig<CoreConfig>
     {
         if (!_players.TryGetValue(playerSlot, out PlayerSQL? player))
             return;
-        
+
         AliasSQL? recentAlias = await _database.GetAliasAsync(player.Id);
-        //alias = Regex.Replace(alias, @"[\\]x[\dA-F]{2}", string.Empty);
 
         if (recentAlias == null || recentAlias.Alias != alias)
             _database.InsertAlias(player.Session!.Id, player.Id, alias);

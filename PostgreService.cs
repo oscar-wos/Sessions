@@ -12,12 +12,12 @@ public class PostgreService : IDatabase
     private readonly string _connectionString;
     private readonly NpgsqlConnection _connection;
 
-    public PostgreService(CoreConfig config, ILogger logger)
+    public PostgreService(SessionsConfig config, ILogger logger)
     {
         _logger = logger;
         _queries = new PostgreServiceQueries();
         _connectionString = BuildConnectionString(config);
-        
+
         try
         {
             _connection = new NpgsqlConnection(_connectionString);
@@ -30,7 +30,7 @@ public class PostgreService : IDatabase
         }
     }
 
-    public string BuildConnectionString(CoreConfig config)
+    public string BuildConnectionString(SessionsConfig config)
     {
         NpgsqlConnectionStringBuilder builder = new()
         {
@@ -43,6 +43,24 @@ public class PostgreService : IDatabase
         };
 
         return builder.ConnectionString;
+    }
+
+    public async Task CreateTablesAsync()
+    {
+        try
+        {
+            await using NpgsqlTransaction tx = await _connection.BeginTransactionAsync();
+
+            foreach (string query in _queries.GetCreateQueries())
+                await _connection.ExecuteAsync(query, transaction: tx);
+
+            await tx.CommitAsync();
+        }
+        catch (NpgsqlException ex)
+        {
+            _logger.LogError(ex, "Failed to create tables");
+            throw;
+        }
     }
 
     public async Task<ServerSQL> GetServerAsync(string serverIp, ushort serverPort)
@@ -127,24 +145,6 @@ public class PostgreService : IDatabase
         }
     }
 
-    public async void CreateTablesAsync()
-    {
-        try
-        {
-            await using NpgsqlTransaction tx = await _connection.BeginTransactionAsync();
-
-            foreach (string query in _queries.GetCreateQueries())
-                await _connection.ExecuteAsync(query, transaction: tx);
-
-            await tx.CommitAsync();
-        }
-        catch (NpgsqlException ex)
-        {
-            _logger.LogError(ex, "Failed to create tables");
-            throw;
-        }
-    }
-
     public async void UpdateSessionsBulkAsync(int[] playerIds, long[] sessionIds)
     {
         await using NpgsqlTransaction tx = await _connection.BeginTransactionAsync();
@@ -156,7 +156,7 @@ public class PostgreService : IDatabase
 
             foreach (long sessionId in sessionIds)
                 await _connection.ExecuteAsync(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
-            
+
             await tx.CommitAsync();
         }
         catch (NpgsqlException ex)
@@ -189,7 +189,7 @@ public class PostgreService : IDatabase
             command.Parameters.AddWithValue("@SessionId", sessionId);
             command.Parameters.AddWithValue("@PlayerId", playerId);
             command.Parameters.AddWithValue("@Alias", alias);
-            
+
             command.ExecuteNonQuery();
         }
         catch (NpgsqlException ex)
@@ -209,7 +209,7 @@ public class PostgreService : IDatabase
             command.Parameters.AddWithValue("@PlayerId", playerId);
             command.Parameters.AddWithValue("@MessageType", (int)messageType);
             command.Parameters.AddWithValue("@Message", message);
-            
+
             command.ExecuteNonQuery();
         }
         catch (NpgsqlException ex)

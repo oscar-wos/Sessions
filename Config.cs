@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Sessions;
 
-public class CoreConfig : BasePluginConfig
+public class SessionsConfig : BasePluginConfig
 {
     public override int Version { get; set; } = 1;
 

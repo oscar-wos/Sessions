@@ -12,7 +12,7 @@ public class SqlService : IDatabase
     private readonly string _connectionString;
     private readonly MySqlConnection _connection;
 
-    public SqlService(CoreConfig config, ILogger logger)
+    public SqlService(SessionsConfig config, ILogger logger)
     {
         _logger = logger;
         _queries = new SqlServiceQueries();
@@ -30,7 +30,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public string BuildConnectionString(CoreConfig config)
+    public string BuildConnectionString(SessionsConfig config)
     {
         MySqlConnectionStringBuilder builder = new()
         {
@@ -130,7 +130,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public async void CreateTablesAsync()
+    public async Task CreateTablesAsync()
     {
         try
         {
@@ -159,7 +159,7 @@ public class SqlService : IDatabase
 
             foreach (long sessionId in sessionIds)
                 await _connection.ExecuteAsync(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
-            
+
             await tx.CommitAsync();
         }
         catch (MySqlException ex)
@@ -191,7 +191,7 @@ public class SqlService : IDatabase
             command.Parameters.AddWithValue("@SessionId", sessionId);
             command.Parameters.AddWithValue("@PlayerId", playerId);
             command.Parameters.AddWithValue("@Alias", alias);
-            
+
             command.ExecuteNonQuery();
         }
         catch (MySqlException ex)
