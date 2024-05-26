@@ -65,11 +65,11 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
         _server.Map = _database.GetMapAsync(Server.MapName).GetAwaiter().GetResult();
 
-        Utilities.GetPlayers().Where(IsValidPlayer).ToList().ForEach(player =>
+        foreach (CCSPlayerController player in Utilities.GetPlayers())
         {
             OnPlayerConnect(player.Slot, player.SteamID, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]).GetAwaiter().GetResult();
             CheckAlias(player.Slot, player.PlayerName).GetAwaiter().GetResult();
-        });
+        }
     }
 
     public async Task OnPlayerConnect(int playerSlot, ulong steamId, string ip)
@@ -80,28 +80,29 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
     public async Task CheckAlias(int playerSlot, string alias)
     {
-        if (!_players.TryGetValue(playerSlot, out PlayerSQL? value))
+        if (!_players.TryGetValue(playerSlot, out PlayerSQL? value) || value.Session == null)
             return;
 
         AliasSQL? recentAlias = await _database.GetAliasAsync(value.Id);
 
         if (recentAlias == null || recentAlias.Alias != alias)
-            _database.InsertAlias(value.Session!.Id, value.Id, alias);
+            _database.InsertAlias(value.Session.Id, value.Id, alias);
     }
 
     public void Timer_Repeat()
     {
-        IEnumerable<CCSPlayerController> players = Utilities.GetPlayers().Where(IsValidPlayer);
         List<int> playerIds = [];
         List<long> sessionIds = [];
 
-        foreach (CCSPlayerController player in players)
+        foreach (CCSPlayerController player in Utilities.GetPlayers())
         {
             if (!_players.TryGetValue(player.Slot, out PlayerSQL? value))
                 continue;
 
             playerIds.Add(value.Id);
-            sessionIds.Add(value.Session!.Id);
+
+            if (value.Session != null)
+                sessionIds.Add(value.Session.Id);
         }
 
         _database.UpdateSessions(playerIds, sessionIds);
