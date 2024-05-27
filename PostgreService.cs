@@ -160,7 +160,7 @@ public class PostgreService : IDatabase
 
     public async void UpdateSessions(List<int> playerIds, List<long> sessionIds)
     {
-        NpgsqlTransaction tx = await _connection.BeginTransactionAsync();
+        await using NpgsqlTransaction tx = await _connection.BeginTransactionAsync();
 
         try
         {
