@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using SessionsLibrary;
 
 namespace Sessions;
 

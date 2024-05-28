@@ -1,9 +1,10 @@
+using SessionsLibrary;
+
 namespace Sessions;
 
 public partial class Sessions
 {
     public override string ModuleName => "Sessions";
-    public override string ModuleDescription => "Track player sessions";
     public override string ModuleAuthor => "github.com/oscar-wos/Sessions";
     public override string ModuleVersion => "1.3.0";
 

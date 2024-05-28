@@ -1,6 +1,7 @@
 using Dapper;
 using Npgsql;
 using Microsoft.Extensions.Logging;
+using SessionsLibrary;
 
 namespace Sessions;
 

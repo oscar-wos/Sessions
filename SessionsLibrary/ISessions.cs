@@ -1,8 +1,8 @@
-namespace Sessions;
+namespace SessionsLibrary;
 
-public interface ISessionsLibrary
+public interface ISessions
 {
-    PlayerSQL? Player(int playerSlot);
+    PlayerSQL? Player { get; }
 }
 
 public class ServerSQL
