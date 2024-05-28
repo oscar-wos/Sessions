@@ -1,4 +1,4 @@
-Supports postgre + mysql
+Supports postgresql + mysql
 `counterstrikesharp/configs/plugins/Sessions/Sessions.json`
 ```
 {

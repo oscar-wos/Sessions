@@ -1,6 +1,7 @@
 using Dapper;
 using Npgsql;
 using Microsoft.Extensions.Logging;
+using SessionsLibrary;
 
 namespace Sessions;
 
@@ -12,12 +13,12 @@ public class PostgreService : IDatabase
     private readonly string _connectionString;
     private readonly NpgsqlConnection _connection;
 
-    public PostgreService(CoreConfig config, ILogger logger)
+    public PostgreService(SessionsConfig config, ILogger logger)
     {
         _logger = logger;
         _queries = new PostgreServiceQueries();
         _connectionString = BuildConnectionString(config);
-        
+
         try
         {
             _connection = new NpgsqlConnection(_connectionString);
@@ -30,7 +31,7 @@ public class PostgreService : IDatabase
         }
     }
 
-    public string BuildConnectionString(CoreConfig config)
+    public string BuildConnectionString(SessionsConfig config)
     {
         NpgsqlConnectionStringBuilder builder = new()
         {
@@ -43,6 +44,24 @@ public class PostgreService : IDatabase
         };
 
         return builder.ConnectionString;
+    }
+
+    public async Task CreateTablesAsync()
+    {
+        try
+        {
+            await using NpgsqlTransaction tx = await _connection.BeginTransactionAsync();
+
+            foreach (string query in _queries.GetCreateQueries())
+                await _connection.ExecuteAsync(query, transaction: tx);
+
+            await tx.CommitAsync();
+        }
+        catch (NpgsqlException ex)
+        {
+            _logger.LogError(ex, "Failed to create tables");
+            throw;
+        }
     }
 
     public async Task<ServerSQL> GetServerAsync(string serverIp, ushort serverPort)
@@ -127,25 +146,20 @@ public class PostgreService : IDatabase
         }
     }
 
-    public async void CreateTablesAsync()
+    public async void UpdateSeen(int playerId)
     {
         try
         {
-            await using NpgsqlTransaction tx = await _connection.BeginTransactionAsync();
-
-            foreach (string query in _queries.GetCreateQueries())
-                await _connection.ExecuteAsync(query, transaction: tx);
-
-            await tx.CommitAsync();
+            await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = playerId });
         }
         catch (NpgsqlException ex)
         {
-            _logger.LogError(ex, "Failed to create tables");
+            _logger.LogError(ex, "Error while updating seen");
             throw;
         }
     }
 
-    public async void UpdateSessionsBulkAsync(int[] playerIds, long[] sessionIds)
+    public async void UpdateSessions(List<int> playerIds, List<long> sessionIds)
     {
         await using NpgsqlTransaction tx = await _connection.BeginTransactionAsync();
 
@@ -156,7 +170,7 @@ public class PostgreService : IDatabase
 
             foreach (long sessionId in sessionIds)
                 await _connection.ExecuteAsync(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
-            
+
             await tx.CommitAsync();
         }
         catch (NpgsqlException ex)
@@ -167,20 +181,7 @@ public class PostgreService : IDatabase
         }
     }
 
-    public void UpdateSeen(int playerId)
-    {
-        try
-        {
-            _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = playerId });
-        }
-        catch (NpgsqlException ex)
-        {
-            _logger.LogError(ex, "Error while updating seen");
-            throw;
-        }
-    }
-
-    public void InsertAlias(long sessionId, int playerId, string alias)
+    public async void InsertAlias(long sessionId, int playerId, string alias)
     {
         try
         {
@@ -189,8 +190,8 @@ public class PostgreService : IDatabase
             command.Parameters.AddWithValue("@SessionId", sessionId);
             command.Parameters.AddWithValue("@PlayerId", playerId);
             command.Parameters.AddWithValue("@Alias", alias);
-            
-            command.ExecuteNonQuery();
+
+            await command.ExecuteNonQueryAsync();
         }
         catch (NpgsqlException ex)
         {
@@ -199,7 +200,7 @@ public class PostgreService : IDatabase
         }
     }
 
-    public void InsertMessage(long sessionId, int playerId, MessageType messageType, string message)
+    public async void InsertMessage(long sessionId, int playerId, MessageType messageType, string message)
     {
         try
         {
@@ -209,8 +210,8 @@ public class PostgreService : IDatabase
             command.Parameters.AddWithValue("@PlayerId", playerId);
             command.Parameters.AddWithValue("@MessageType", (int)messageType);
             command.Parameters.AddWithValue("@Message", message);
-            
-            command.ExecuteNonQuery();
+
+            await command.ExecuteNonQueryAsync();
         }
         catch (NpgsqlException ex)
         {
@@ -276,9 +277,9 @@ public class PostgreServiceQueries : Queries
     public override string SelectPlayer => "SELECT id, first_seen, last_seen FROM players WHERE steam_id = @SteamId";
     public override string InsertPlayer => "INSERT INTO players (steam_id) VALUES (@SteamId) RETURNING id, first_seen, last_seen";
 
-    public override string InsertSession => "INSERT INTO sessions (player_id, server_id, map_id, ip) VALUES (@PlayerId, @ServerId, @MapId, CAST(@Ip as INET)) RETURNING id";
-    public override string UpdateSession => "UPDATE sessions SET end_time = NOW() WHERE id = @SessionId";
     public override string UpdateSeen => "UPDATE players SET last_seen = NOW() WHERE id = @PlayerId";
+    public override string UpdateSession => "UPDATE sessions SET end_time = NOW() WHERE id = @SessionId";
+    public override string InsertSession => "INSERT INTO sessions (player_id, server_id, map_id, ip) VALUES (@PlayerId, @ServerId, @MapId, CAST(@Ip as INET)) RETURNING id";
 
     public override string SelectAlias => "SELECT id, alias FROM aliases WHERE player_id = @PlayerId ORDER BY id DESC LIMIT 1";
     public override string InsertAlias => "INSERT INTO aliases (session_id, player_id, alias) VALUES (@SessionId, @PlayerId, @Alias)";

@@ -1,10 +1,12 @@
 using Microsoft.Extensions.Logging;
+using SessionsLibrary;
 
 namespace Sessions;
 
 public interface IDatabase
 {
-    string BuildConnectionString(CoreConfig config);
+    string BuildConnectionString(SessionsConfig config);
+    Task CreateTablesAsync();
 
     Task<ServerSQL> GetServerAsync(string serverIp, ushort serverPort);
     Task<MapSQL> GetMapAsync(string mapName);
@@ -12,9 +14,8 @@ public interface IDatabase
     Task<SessionSQL> GetSessionAsync(int playerId, int serverId, int mapId, string ip);
     Task<AliasSQL?> GetAliasAsync(int playerId);
 
-    void CreateTablesAsync();
-    void UpdateSessionsBulkAsync(int[] playerIds, long[] sessionIds);
     void UpdateSeen(int playerId);
+    void UpdateSessions(List<int> playerIds, List<long> sessionIds);
 
     void InsertAlias(long sessionId, int playerId, string alias);
     void InsertMessage(long sessionId, int playerId, MessageType messageType, string message);
@@ -30,7 +31,7 @@ public class DatabaseFactory : IDatabaseFactory
     private readonly IDatabase _database;
     private readonly ILogger _logger;
 
-    public DatabaseFactory(CoreConfig config)
+    public DatabaseFactory(SessionsConfig config)
     {
         CheckConfig(config);
 
@@ -45,17 +46,13 @@ public class DatabaseFactory : IDatabaseFactory
         };
     }
 
-    public IDatabase Database => _database;
-
-    private static void CheckConfig(CoreConfig config)
+    private static void CheckConfig(SessionsConfig config)
     {
-        if (string.IsNullOrWhiteSpace(config.DatabaseType) ||
-            string.IsNullOrWhiteSpace(config.DatabaseHost) ||
-            string.IsNullOrWhiteSpace(config.DatabaseUser) ||
-            string.IsNullOrWhiteSpace(config.DatabaseName) ||
-            config.DatabasePort == 0)
-        {
+        if (string.IsNullOrWhiteSpace(config.DatabaseType) || string.IsNullOrWhiteSpace(config.DatabaseHost)
+            || string.IsNullOrWhiteSpace(config.DatabaseUser) || string.IsNullOrWhiteSpace(config.DatabaseName)
+            || config.DatabasePort == 0)
             throw new InvalidOperationException("Database is not set in the configuration file");
-        }
     }
+
+    public IDatabase Database => _database;
 }
