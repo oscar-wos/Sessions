@@ -1,8 +1,9 @@
 namespace SessionsLibrary;
 
-public interface ISessions
+public interface ISessionsPlayer
 {
-    PlayerSQL? Player { get; }
+    PlayerSQL? PlayerSQL { get; }
+    SessionSQL? SessionSQL { get; }
 }
 
 public class ServerSQL
