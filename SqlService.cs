@@ -1,7 +1,7 @@
 using Dapper;
 using MySqlConnector;
 using Microsoft.Extensions.Logging;
-using SessionsLibrary;
+using Sessions.API;
 
 namespace Sessions;
 

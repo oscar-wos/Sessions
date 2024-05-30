@@ -1,7 +1,7 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Capabilities;
-using SessionsLibrary;
+using Sessions.API;
 
 namespace TestPlugin;
 

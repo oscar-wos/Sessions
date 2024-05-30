@@ -12,8 +12,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="SessionsLibrary">
-            <HintPath>..\SessionsLibrary\obj\Debug\net8.0\SessionsLibrary.dll</HintPath>
+        <Reference Include="Sessions.API">
+            <HintPath>..\Sessions.API\Sessions.API.dll</HintPath>
             <Private>False</Private>
         </Reference>
     </ItemGroup>

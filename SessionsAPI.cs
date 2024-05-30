@@ -1,12 +1,17 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Capabilities;
-using SessionsLibrary;
+using Sessions.API;
 
 namespace Sessions;
 
 public partial class Sessions
 {
     public static PlayerCapability<ISessionsPlayer> Capability_Player { get; } = new("sessions:player");
+
+    private void RegisterCapabilities()
+    {
+        Capabilities.RegisterPlayerCapability(Capability_Player, player => new SessionsPlayer(player, this));
+    }
 }
 
 public class SessionsPlayer(CCSPlayerController player, Sessions plugin) : ISessionsPlayer

@@ -1,9 +1,8 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Timers;
-using SessionsLibrary;
+using Sessions.API;
 
 namespace Sessions;
 
@@ -18,7 +17,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
     public override void Load(bool hotReload)
     {
-        Capabilities.RegisterPlayerCapability(Capability_Player, player => new SessionsPlayer(player, this));
+        RegisterCapabilities();
 
         string ip = _ip.GetPublicIp();
         ushort port = (ushort)ConVar.Find("hostport")!.GetPrimitiveValue<int>();

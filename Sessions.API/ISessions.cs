@@ -1,4 +1,4 @@
-namespace SessionsLibrary;
+namespace Sessions.API;
 
 public interface ISessionsPlayer
 {

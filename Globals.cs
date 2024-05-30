@@ -1,4 +1,4 @@
-using SessionsLibrary;
+using Sessions.API;
 
 namespace Sessions;
 

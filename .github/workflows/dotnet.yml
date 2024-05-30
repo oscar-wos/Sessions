@@ -15,7 +15,7 @@ on:
 env:
   PLUGIN_NAME: Sessions
   DOTNET_VERSION: 8.0.x
-  PATH_PLUGIN: addons/counterstrikesharp/plugins/
+  PATH_PLUGIN: addons/counterstrikesharp/
   START_VERSION: 1.0.0
   USE_V_VERSION: false
 
@@ -122,10 +122,15 @@ jobs:
     
     - name: Create plugin directory
       run: |
-        mkdir -p plugin/${{ env.PATH_PLUGIN }}${{ env.PLUGIN_NAME }}
+        mkdir -p plugin/${{ env.PATH_PLUGIN }}plugins/${{ env.PLUGIN_NAME }}
+        mkdir -p plugin/${{ env.PATH_PLUGIN }}shared/${{ env.PLUGIN_NAME }}
+        mkdir -p shared/SessionsLibrary
         rm -rf ./bin/Release/net8.0/*.pdb
         rm -rf ./bin/Release/net8.0/*.deps.json
-        cp -r ./bin/Release/net8.0/* plugin/${{ env.PATH_PLUGIN }}${{ env.PLUGIN_NAME }}
+        cp -r ./bin/Release/net8.0/* plugin/${{ env.PATH_PLUGIN }}/plugins/${{ env.PLUGIN_NAME }}
+        cp -r ./SessionsLibrary/SessionsLibrary.dll plugin/${{ env.PATH_PLUGIN }}/shared/${{ env.PLUGIN_NAME }}/${{ env.PLUGIN_NAME }}.dll
+        cp -r ./SessionsLibrary/SessionsLibrary.pdb plugin/${{ env.PATH_PLUGIN }}/shared/${{ env.PLUGIN_NAME }}/${{ env.PLUGIN_NAME }}.pdb
+        cp -r ./SessionsLibrary/SessionsLibrary.deps.json plugin/${{ env.PATH_PLUGIN }}/shared/${{ env.PLUGIN_NAME }}/${{ env.PLUGIN_NAME }}.deps.json
 
     - name: Zip plugin
       run: |
