@@ -1,4 +1,4 @@
-//https://discord.com/channels/1160907911501991946/1233009182857494588
+﻿//https://discord.com/channels/1160907911501991946/1233009182857494588
 //nuko8964
 using System.Runtime.InteropServices;
 using CounterStrikeSharp.API.Core;

@@ -1,6 +1,2 @@
-bin/
-obj/
-compiled/
-*.sln
 .vs/
-.vscode/
+.obj/
