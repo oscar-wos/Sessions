@@ -7,14 +7,9 @@ namespace Sessions;
 
 public class Ip
 {
-    private delegate nint CNetworkSystem_UpdatePublicIp(nint a1);
-    private CNetworkSystem_UpdatePublicIp? _networkSystemUpdatePublicIp;
-    private readonly nint _networkSystem;
-
-    public Ip()
-    {
-        _networkSystem = NativeAPI.GetValveInterface(0, "NetworkSystemVersion001");
-    }
+    private delegate nint CNetworkSystemUpdatePublicIp(nint a1);
+    private CNetworkSystemUpdatePublicIp? _networkSystemUpdatePublicIp;
+    private readonly nint _networkSystem = NativeAPI.GetValveInterface(0, "NetworkSystemVersion001");
 
     public string GetPublicIp()
     {
@@ -22,11 +17,11 @@ public class Ip
         {
             if (_networkSystemUpdatePublicIp == null)
             {
-                nint funcPtr = *(nint*)(*(nint*)_networkSystem + 256);
-                _networkSystemUpdatePublicIp = Marshal.GetDelegateForFunctionPointer<CNetworkSystem_UpdatePublicIp>(funcPtr);
+                var funcPtr = *(nint*)(*(nint*)_networkSystem + 256);
+                _networkSystemUpdatePublicIp = Marshal.GetDelegateForFunctionPointer<CNetworkSystemUpdatePublicIp>(funcPtr);
             }
 
-            byte* ipBytes = (byte*)(_networkSystemUpdatePublicIp(_networkSystem) + 4);
+            var ipBytes = (byte*)(_networkSystemUpdatePublicIp(_networkSystem) + 4);
             return $"{ipBytes[0]}.{ipBytes[1]}.{ipBytes[2]}.{ipBytes[3]}";
         }
     }

@@ -2,7 +2,6 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Timers;
-using Sessions.API;
 
 namespace Sessions;
 
@@ -12,27 +11,27 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
     public void OnConfigParsed(SessionsConfig config)
     {
-        _database = new DatabaseFactory(config).Database;
+        Database = new DatabaseFactory(config).Database;
     }
 
     public override void Load(bool hotReload)
     {
         RegisterCapabilities();
 
-        string ip = _ip.GetPublicIp();
-        ushort port = (ushort)ConVar.Find("hostport")!.GetPrimitiveValue<int>();
+        var ip = Ip.GetPublicIp();
+        var port = (ushort)ConVar.Find("hostport")!.GetPrimitiveValue<int>();
 
-        _database.CreateTablesAsync().GetAwaiter().GetResult();
-        _server = _database.GetServerAsync(ip, port).GetAwaiter().GetResult();
-        _timer = AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
+        Database.CreateTablesAsync().GetAwaiter().GetResult();
+        Server = Database.GetServerAsync(ip, port).GetAwaiter().GetResult();
+        Timer = AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
 
         RegisterListener<Listeners.OnMapStart>(mapName =>
-            _server.Map = _database.GetMapAsync(mapName).GetAwaiter().GetResult()
+            Server.Map = Database.GetMapAsync(mapName).GetAwaiter().GetResult()
         );
 
         RegisterListener<Listeners.OnClientAuthorized>((playerSlot, steamId) =>
         {
-            CCSPlayerController? player = Utilities.GetPlayerFromSlot(playerSlot);
+            var player = Utilities.GetPlayerFromSlot(playerSlot);
 
             if (!IsValidPlayer(player))
                 return;
@@ -43,22 +42,22 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
         RegisterListener<Listeners.OnClientDisconnect>(playerSlot =>
         {
-            if (!_players.TryGetValue(playerSlot, out PlayerSQL? value))
+            if (!Players.TryGetValue(playerSlot, out var value))
                 return;
 
-            _database.UpdateSeen(value.Id);
-            _players.Remove(playerSlot);
+            Database.UpdateSeen(value.Id);
+            Players.Remove(playerSlot);
         });
 
-        RegisterEventHandler<EventPlayerChat>((@event, info) =>
+        RegisterEventHandler<EventPlayerChat>((@event, _) =>
         {
-            CCSPlayerController? player = Utilities.GetPlayerFromUserid(@event.Userid);
+            var player = Utilities.GetPlayerFromUserid(@event.Userid);
 
-            if (!IsValidPlayer(player) || !_players.TryGetValue(player!.Slot, out PlayerSQL? value) || value.Session == null)
+            if (!IsValidPlayer(player) || !Players.TryGetValue(player!.Slot, out var value) || value.Session == null)
                 return HookResult.Continue;
 
-            MessageType messageType = @event.Teamonly ? MessageType.TeamChat : MessageType.Chat;
-            _database.InsertMessage(value.Session.Id, value.Id, messageType, @event.Text);
+            var messageType = @event.Teamonly ? MessageType.TeamChat : MessageType.Chat;
+            Database.InsertMessage(value.Session.Id, value.Id, messageType, @event.Text);
 
             return HookResult.Continue;
         });
@@ -66,13 +65,10 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
         if (!hotReload)
             return;
 
-        _server.Map = _database.GetMapAsync(Server.MapName).GetAwaiter().GetResult();
+        Server.Map = Database.GetMapAsync(CounterStrikeSharp.API.Server.MapName).GetAwaiter().GetResult();
 
-        foreach (CCSPlayerController player in Utilities.GetPlayers())
+        foreach (var player in Utilities.GetPlayers().Where(IsValidPlayer))
         {
-            if (!IsValidPlayer(player))
-                continue;
-
             OnPlayerConnect(player.Slot, player.SteamID, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]).GetAwaiter().GetResult();
             CheckAlias(player.Slot, player.PlayerName).GetAwaiter().GetResult();
         }
@@ -80,19 +76,19 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
     public async Task OnPlayerConnect(int playerSlot, ulong steamId, string ip)
     {
-        _players[playerSlot] = await _database.GetPlayerAsync(steamId);
-        _players[playerSlot].Session = await _database.GetSessionAsync(_players[playerSlot].Id, _server!.Id, _server.Map!.Id, ip);
+        Players[playerSlot] = await Database.GetPlayerAsync(steamId);
+        Players[playerSlot].Session = await Database.GetSessionAsync(Players[playerSlot].Id, Server!.Id, Server.Map!.Id, ip);
     }
 
-    public async Task CheckAlias(int playerSlot, string alias)
+    public async Task CheckAlias(int playerSlot, string name)
     {
-        if (!_players.TryGetValue(playerSlot, out PlayerSQL? value) || value.Session == null)
+        if (!Players.TryGetValue(playerSlot, out var value) || value.Session == null)
             return;
 
-        AliasSQL? recentAlias = await _database.GetAliasAsync(value.Id);
+        var recentAlias = await Database.GetAliasAsync(value.Id);
 
-        if (recentAlias == null || recentAlias.Alias != alias)
-            _database.InsertAlias(value.Session.Id, value.Id, alias);
+        if (recentAlias == null || recentAlias.Name != name)
+            Database.InsertAlias(value.Session.Id, value.Id, name);
     }
 
     public void Timer_Repeat()
@@ -100,9 +96,9 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
         List<int> playerIds = [];
         List<long> sessionIds = [];
 
-        foreach (CCSPlayerController player in Utilities.GetPlayers())
+        foreach (var player in Utilities.GetPlayers())
         {
-            if (!IsValidPlayer(player) || !_players.TryGetValue(player.Slot, out PlayerSQL? value))
+            if (!IsValidPlayer(player) || !Players.TryGetValue(player.Slot, out var value))
                 continue;
 
             playerIds.Add(value.Id);
@@ -111,11 +107,11 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
                 sessionIds.Add(value.Session.Id);
         }
 
-        _database.UpdateSessions(playerIds, sessionIds);
+        Database.UpdateSessions(playerIds, sessionIds);
     }
 
     private static bool IsValidPlayer(CCSPlayerController? player)
     {
-        return player != null && player.IsValid && !player.IsBot && !player.IsHLTV;
+        return player != null && player is { IsValid: true, IsBot: false, IsHLTV: false };
     }
 }

@@ -27,7 +27,7 @@ public interface IDatabaseQueries
     string InsertMessage { get; }
 }
 
-public abstract class Queries : IDatabaseQueries
+public abstract class Queries
 {
     public abstract string CreateServers { get; }
     public abstract string CreateMaps { get; }
@@ -35,23 +35,6 @@ public abstract class Queries : IDatabaseQueries
     public abstract string CreateSessions { get; }
     public abstract string CreateAliases { get; }
     public abstract string CreateMessages { get; }
-
-    public abstract string SelectServer { get; }
-    public abstract string InsertServer { get; }
-
-    public abstract string SelectMap { get; }
-    public abstract string InsertMap { get; }
-
-    public abstract string SelectPlayer { get; }
-    public abstract string InsertPlayer { get; }
-
-    public abstract string InsertSession { get; }
-    public abstract string UpdateSession { get; }
-    public abstract string UpdateSeen { get; }
-
-    public abstract string SelectAlias { get; }
-    public abstract string InsertAlias { get; }
-    public abstract string InsertMessage { get; }
 
     public IEnumerable<string> GetCreateQueries()
     {

@@ -2,38 +2,38 @@ namespace Sessions.API;
 
 public interface ISessionsPlayer
 {
-    PlayerSQL? PlayerSQL { get; }
-    SessionSQL? SessionSQL { get; }
+    Player? Player { get; }
+    Session? Session { get; }
 }
 
-public class ServerSQL
+public class Server
 {
     public short Id { get; set; }
 
-    public MapSQL? Map { get; set; }
+    public Map? Map { get; set; }
 }
 
-public class MapSQL
+public class Map
 {
     public short Id { get; set; }
 }
 
-public class PlayerSQL
+public class Player
 {
     public int Id { get; set; }
     public DateTime FirstSeen { get; set; }
     public DateTime LastSeen { get; set; }
 
-    public SessionSQL? Session { get; set; }
+    public Session? Session { get; set; }
 }
 
-public class SessionSQL
+public class Session
 {
     public long Id { get; set; }
 }
 
-public class AliasSQL
+public class Alias
 {
     public int Id { get; set; }
-    public required string Alias { get; set; }
+    public required string Name { get; set; }
 }

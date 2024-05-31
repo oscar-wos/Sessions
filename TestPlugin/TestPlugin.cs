@@ -10,14 +10,14 @@ public class TestPlugin : BasePlugin
     public override string ModuleName => "TestPlugin";
     public override string ModuleVersion => "1.0.0";
 
-    public static PlayerCapability<ISessionsPlayer> Capability_Player { get; } = new("sessions:player");
+    public static PlayerCapability<ISessionsPlayer> CapabilityPlayer { get; } = new("sessions:player");
 
     public override void Load(bool isReload)
     {
         foreach (CCSPlayerController player in Utilities.GetPlayers())
         {
-            var temp = Capability_Player.Get(player);
-            var temp2 = temp.SessionSQL;
+            var temp = CapabilityPlayer.Get(player);
+            var temp2 = temp.Session;
 
             Console.WriteLine(temp2.Id);
         }

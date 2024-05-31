@@ -8,14 +8,14 @@ public partial class Sessions
     public override string ModuleAuthor => "github.com/oscar-wos/Sessions";
     public override string ModuleVersion => "1.3.0";
 
-    public required IDatabase _database;
-    public readonly Ip _ip = new();
-    public ServerSQL? _server;
-    public Dictionary<int, PlayerSQL> _players = [];
-    public CounterStrikeSharp.API.Modules.Timers.Timer? _timer;
+    public required IDatabase Database;
+    public readonly Ip Ip = new();
+    public Server? Server;
+    public Dictionary<int, Player> Players = [];
+    public CounterStrikeSharp.API.Modules.Timers.Timer? Timer;
 }
 
-public enum MessageType : int
+public enum MessageType
 {
     Chat = 0,
     TeamChat = 1,
