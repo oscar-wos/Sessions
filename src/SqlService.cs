@@ -63,7 +63,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public async Task<Server?> GetServerAsync(string serverIp, ushort serverPort)
+    public async Task<Server> GetServerAsync(string serverIp, ushort serverPort)
     {
         try
         {
