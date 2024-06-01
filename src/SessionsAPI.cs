@@ -1,4 +1,4 @@
-using CounterStrikeSharp.API.Core;
+﻿using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Capabilities;
 using Sessions.API;
 
@@ -6,7 +6,7 @@ namespace Sessions;
 
 public partial class Sessions
 {
-    public static PlayerCapability<ISessionsPlayer> CapabilityPlayer { get; } = new("sessions:player");
+    private static PlayerCapability<ISessionsPlayer> CapabilityPlayer { get; } = new("sessions:player");
 
     private void RegisterCapabilities()
     {

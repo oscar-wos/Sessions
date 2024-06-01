@@ -1,6 +1,6 @@
-bin/
-obj/
-compiled/
-*.sln
 .vs/
-.vscode/
+.obj/
+src/bin/
+src/obj/
+Sessions.API/bin/
+Sessions.API/obj/
