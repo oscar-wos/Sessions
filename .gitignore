@@ -1,2 +1,6 @@
 .vs/
 .obj/
+src/bin/
+src/obj/
+Sessions.API/bin/
+Sessions.API/obj/
