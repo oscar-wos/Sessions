@@ -1,0 +1,9 @@
+[user]
+    name = Oscar Wos-Szlaga
+    email = 29248751+oscar-wos@users.noreply.github.com
+    signingkey = FA70884703C16D6B
+[commit]
+    gpgsign = true
+[gpg]
+    program = C:/Program Files (x86)/gnupg/bin/gpg.exe
+    GNUPGHOME=%USERPROFILE%\.gnupg
