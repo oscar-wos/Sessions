@@ -1,5 +1,6 @@
 ﻿using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Capabilities;
+using CounterStrikeSharp.API.Modules.Commands;
 using Microsoft.Extensions.Logging;
 using Sessions.API;
 
@@ -15,28 +16,42 @@ public class TestPlugin : BasePlugin
 
     public override void Load(bool isReload)
     {
-        AddCommand("css_test", "test", (controller, _) =>
-        {
-            if (controller == null)
-                return;
+        var server = CapabilityServer.Get()!.Server;
 
-            var server = CapabilityServer.Get()!.Server;
-            var player = CapabilityPlayer.Get(controller)!.Player;
-            var session = CapabilityPlayer.Get(controller)!.Session;
-            
-            Logger.LogInformation($"Server: {server!.Id} - Map: ${server!.Map!.Id} - Player: {player!.Id} - Session: {session!.Id}");
-        });
+        if (server != null)
+            Logger.LogInformation($"Server: {server.Id} (${server.Ip}:${server.Port}) - Map: ${server.Map!.Id}");
 
-        RegisterEventHandler<EventPlayerConnect>((@event, _) =>
-        {
-            if (@event.Userid == null)
-                return HookResult.Continue;
+        AddCommand("css_test", "test", CommandTest);
+        RegisterEventHandler<EventPlayerConnect>(EventConnect, HookMode.Pre);
+    }
 
-            var controller = @event.Userid;
-            var player = CapabilityPlayer.Get(controller)!.Player;
+    private void CommandTest(CCSPlayerController? controller, CommandInfo info)
+    {
+        if (controller == null)
+            return;
 
-            Logger.LogInformation($"Player {player!.Id} connected");
+        var server = CapabilityServer.Get()!.Server;
+        var player = CapabilityPlayer.Get(controller)!.Player;
+        var session = CapabilityPlayer.Get(controller)!.Session;
+
+        if (server == null || player == null || session == null)
+            return;
+
+        Logger.LogInformation($"Player: {player.Id} - Session: {session.Id} - Server: {server.Id}/{CounterStrikeSharp.API.Server.MapName}[{server.Map!.Id}] ({server.Ip}:{server.Port}");
+    }
+
+    private HookResult EventConnect(EventPlayerConnect @event, GameEventInfo info)
+    {
+        if (@event.Userid == null)
             return HookResult.Continue;
-        }, HookMode.Pre);
+
+        var controller = @event.Userid;
+        var player = CapabilityPlayer.Get(controller)!.Player;
+
+        if (player == null)
+            return HookResult.Continue;
+
+        Logger.LogInformation($"Player {player.Id} connected");
+        return HookResult.Continue;
     }
 }

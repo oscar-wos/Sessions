@@ -44,7 +44,7 @@ public class PostgresService : IDatabase
         return builder.ConnectionString;
     }
 
-    public async Task CreateTablesAsync()
+    public async Task StartAsync()
     {
         try
         {

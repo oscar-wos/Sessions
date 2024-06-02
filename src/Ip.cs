@@ -11,7 +11,7 @@ public class Ip
     private CNetworkSystemUpdatePublicIp? _networkSystemUpdatePublicIp;
     private readonly nint _networkSystem = NativeAPI.GetValveInterface(0, "NetworkSystemVersion001");
 
-    public string GetPublicIp()
+    public string? GetPublicIp()
     {
         unsafe
         {

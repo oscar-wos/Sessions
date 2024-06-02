@@ -4,6 +4,8 @@ public class Server
 {
     public short Id { get; init; }
     public Map? Map { get; set; }
+    public required string Ip { get; set; }
+    public required ushort Port { get; set; }
 }
 
 public class Map

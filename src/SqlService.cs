@@ -45,7 +45,7 @@ public class SqlService : IDatabase
         return builder.ConnectionString;
     }
 
-    public async Task CreateTablesAsync()
+    public async Task StartAsync()
     {
         try
         {
@@ -73,7 +73,7 @@ public class SqlService : IDatabase
                 return result;
 
             var insert = await _connection.ExecuteScalarAsync(_queries.InsertServer, new { ServerIp = serverIp, ServerPort = serverPort });
-            return new Server { Id = Convert.ToInt16(insert) };
+            return new Server { Id = Convert.ToInt16(insert), Ip = serverIp, Port = serverPort };
         }
         catch (MySqlException ex)
         {
