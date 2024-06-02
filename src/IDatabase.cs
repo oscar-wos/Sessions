@@ -4,7 +4,7 @@ namespace Sessions;
 
 public interface IDatabase
 {
-    Task CreateTablesAsync();
+    Task StartAsync();
     Task<Server> GetServerAsync(string serverIp, ushort serverPort);
     Task<Map> GetMapAsync(string mapName);
     Task<Player> GetPlayerAsync(ulong steamId);

@@ -2,7 +2,6 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Timers;
-using Microsoft.Extensions.Logging;
 
 namespace Sessions;
 
@@ -15,52 +14,20 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
     public override void Load(bool isReload)
     {
-        RegisterCapabilities();
-
-        var ip = _ip.GetPublicIp();
+        var ip = _ip.GetPublicIp()!;
         var port = (ushort)ConVar.Find("hostport")!.GetPrimitiveValue<int>();
-        Logger.LogInformation($"Ip: {ip}:{port}");
 
-        Database.CreateTablesAsync().GetAwaiter().GetResult();
+        Database.StartAsync().GetAwaiter().GetResult();
         Server = Database.GetServerAsync(ip, port).GetAwaiter().GetResult();
+        Server.Ip = ip;
+        Server.Port = port;
+
+        RegisterCapabilities();
+        RegisterListener<Listeners.OnMapStart>(OnMapStart);
+        RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorized);
+        RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
+        RegisterEventHandler<EventPlayerChat>(OnPlayerChat);
         AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
-
-        RegisterListener<Listeners.OnMapStart>(mapName =>
-            Server.Map = Database.GetMapAsync(mapName).GetAwaiter().GetResult()
-        );
-
-        RegisterListener<Listeners.OnClientAuthorized>((playerSlot, steamId) =>
-        {
-            var player = Utilities.GetPlayerFromSlot(playerSlot);
-
-            if (!IsValidPlayer(player))
-                return;
-
-            OnPlayerConnect(playerSlot, steamId.SteamId64, NativeAPI.GetPlayerIpAddress(playerSlot).Split(":")[0]).GetAwaiter().GetResult();
-            CheckAlias(playerSlot, player!.PlayerName).GetAwaiter().GetResult();
-        });
-
-        RegisterListener<Listeners.OnClientDisconnect>(playerSlot =>
-        {
-            if (!Players.TryGetValue(playerSlot, out var value))
-                return;
-
-            Database.UpdateSeen(value.Id);
-            Players.Remove(playerSlot);
-        });
-
-        RegisterEventHandler<EventPlayerChat>((@event, _) =>
-        {
-            var player = Utilities.GetPlayerFromUserid(@event.Userid);
-
-            if (!IsValidPlayer(player) || !Players.TryGetValue(player!.Slot, out var value) || value.Session == null)
-                return HookResult.Continue;
-
-            var messageType = @event.Teamonly ? MessageType.TeamChat : MessageType.Chat;
-            Database.InsertMessage(value.Session.Id, value.Id, messageType, @event.Text);
-
-            return HookResult.Continue;
-        });
 
         if (!isReload)
             return;
@@ -69,7 +36,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
         foreach (var player in Utilities.GetPlayers().Where(IsValidPlayer))
         {
-            OnPlayerConnect(player.Slot, player.SteamID, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]).GetAwaiter().GetResult();
+            OnPlayerConnect(player.Slot, player.AuthorizedSteamID!.SteamId64, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]).GetAwaiter().GetResult();
             CheckAlias(player.Slot, player.PlayerName).GetAwaiter().GetResult();
         }
     }
