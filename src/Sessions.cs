@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Sessions;
 
-public partial class Sessions : BasePlugin
+public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 {
     public void OnConfigParsed(SessionsConfig config)
     {
