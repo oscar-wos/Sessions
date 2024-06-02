@@ -3,7 +3,7 @@
 public class Server
 {
     public short Id { get; init; }
-    public Map? Map { get; init; }
+    public Map? Map { get; set; }
 }
 
 public class Map
@@ -14,7 +14,7 @@ public class Map
 public class Player
 {
     public int Id { get; init; }
-    public Session? Session { get; init; }
+    public Session? Session { get; set; }
 }
 
 public class Session

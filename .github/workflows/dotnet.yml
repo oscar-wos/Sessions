@@ -5,11 +5,11 @@ on:
         branches:
             - main
     pull_request_review:
-      types:
-        - submitted
+        types:
+            - submitted
     issue_comment:
-      types:
-        - created
+        types:
+            - created
 
 jobs:
     build:
@@ -53,10 +53,18 @@ jobs:
             - name: Create Directories
               run: |
                 mkdir -p plugin/plugins/Sessions
+                mkdir -p plugin/plugins/SessionsTest
                 mkdir -p plugin/shared/Sessions.API
+
+                mv ./TestPlugin/bin/Release/net8.0/TestPlugin.deps.json ./TestPlugin/bin/Release/net8.0/SessionsTest.deps.json
+                mv ./TestPlugin/bin/Release/net8.0/TestPlugin.dll ./TestPlugin/bin/Release/net8.0/SessionsTest.dll
+                mv ./TestPlugin/bin/Release/net8.0/TestPlugin.pdb ./TestPlugin/bin/Release/net8.0/SessionsTest.pdb
+                mv ./TestPlugin/bin/Release/net8.0/* ./plugin/plugins/SessionsTest
                 mv ./src/bin/Release/net8.0/* ./plugin/plugins/Sessions
                 mv ./Sessions.API/bin/Release/net8.0/* ./plugin/shared/Sessions.API
+
                 rm ./plugin/plugins/Sessions/Sessions.API.*
+                rm ./plugin/plugins/SessionsTest/Sessions.API.*
 
             - name: Zip
               run: |

@@ -13,7 +13,7 @@
         <PackageReference Include="Dapper" Version="*">
           <PrivateAssets>false</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Npgsql" Version="*" >
+        <PackageReference Include="Npgsql" Version="*">
           <PrivateAssets>false</PrivateAssets>
         </PackageReference>
         <PackageReference Include="MySqlConnector" Version="*">

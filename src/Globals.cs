@@ -9,7 +9,7 @@ public partial class Sessions
     public override string ModuleAuthor => "github.com/oscar-wos/Sessions";
     public override string ModuleVersion => "1.3.1";
 
-    private Server? _server;
+    public Server? Server;
     private readonly Ip _ip = new();
     public required IDatabase Database;
     public readonly Dictionary<int, Player> Players = [];

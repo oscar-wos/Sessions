@@ -4,3 +4,5 @@ src/bin/
 src/obj/
 Sessions.API/bin/
 Sessions.API/obj/
+TestPlugin/bin/
+TestPlugin/obj/
