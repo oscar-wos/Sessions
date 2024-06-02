@@ -1,15 +1,6 @@
 name: Build and Release
 
-on:
-    push:
-        branches:
-            - main
-    pull_request_review:
-        types:
-            - submitted
-    issue_comment:
-        types:
-            - created
+on: push
 
 jobs:
     build:
