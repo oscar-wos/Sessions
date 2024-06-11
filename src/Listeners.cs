@@ -1,5 +1,6 @@
-﻿using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API;
+﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Entities;
 
 namespace Sessions;
 
@@ -10,15 +11,15 @@ public partial class Sessions
         Server!.Map = Database.GetMapAsync(mapName).GetAwaiter().GetResult();
     }
 
-    private void OnClientAuthorized(int playerSlot, CounterStrikeSharp.API.Modules.Entities.SteamID steamId)
+    private void OnClientAuthorized(int playerSlot, SteamID steamId)
     {
-        var player = Utilities.GetPlayerFromSlot(playerSlot);
+        var controller = Utilities.GetPlayerFromSlot(playerSlot);
 
-        if (!IsValidPlayer(player))
+        if (!IsValidPlayer(controller))
             return;
 
         OnPlayerConnect(playerSlot, steamId.SteamId64, NativeAPI.GetPlayerIpAddress(playerSlot).Split(":")[0]).GetAwaiter().GetResult();
-        CheckAlias(playerSlot, player!.PlayerName).GetAwaiter().GetResult();
+        CheckAlias(playerSlot, controller!.PlayerName).GetAwaiter().GetResult();
     }
 
     private void OnClientDisconnect(int playerSlot)

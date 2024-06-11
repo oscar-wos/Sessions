@@ -19,7 +19,7 @@ public class TestPlugin : BasePlugin
         var server = CapabilityServer.Get()!.Server;
 
         if (server != null)
-            Logger.LogInformation($"Server: {server.Id} (${server.Ip}:${server.Port}) - Map: ${server.Map!.Id}");
+            Logger.LogInformation($"Server: {server.Id} ({server.Ip}:{server.Port}) - Map: {server.MapName} [{server.Map!.Id}]");
 
         AddCommand("css_test", "test", CommandTest);
         RegisterEventHandler<EventPlayerConnect>(EventConnect, HookMode.Pre);
@@ -37,7 +37,7 @@ public class TestPlugin : BasePlugin
         if (server == null || player == null || session == null)
             return;
 
-        Logger.LogInformation($"Player: {player.Id} - Session: {session.Id} - Server: {server.Id}/{CounterStrikeSharp.API.Server.MapName}[{server.Map!.Id}] ({server.Ip}:{server.Port}");
+        Logger.LogInformation($"Player: {player.Id} - Session: {session.Id} - Server: {server.Id}/{server.MapName}[{server.Map!.Id}] ({server.Ip}:{server.Port}");
     }
 
     private HookResult EventConnect(EventPlayerConnect @event, GameEventInfo info)
@@ -48,10 +48,9 @@ public class TestPlugin : BasePlugin
         var controller = @event.Userid;
         var player = CapabilityPlayer.Get(controller)!.Player;
 
-        if (player == null)
-            return HookResult.Continue;
+        if (player != null)
+            Logger.LogInformation($"Player {player.Id} connected");
 
-        Logger.LogInformation($"Player {player.Id} connected");
         return HookResult.Continue;
     }
 }

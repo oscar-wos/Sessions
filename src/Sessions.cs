@@ -14,6 +14,16 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
     public override void Load(bool isReload)
     {
+        RegisterCapabilities();
+        RegisterListener<Listeners.OnMapStart>(OnMapStart);
+        RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorized);
+        RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
+        RegisterEventHandler<EventPlayerChat>(OnPlayerChat);
+        AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
+    }
+
+    public override void OnAllPluginsLoaded(bool isReload)
+    {
         var ip = _ip.GetPublicIp()!;
         var port = (ushort)ConVar.Find("hostport")!.GetPrimitiveValue<int>();
 
@@ -21,18 +31,12 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
         Server = Database.GetServerAsync(ip, port).GetAwaiter().GetResult();
         Server.Ip = ip;
         Server.Port = port;
-
-        RegisterCapabilities();
-        RegisterListener<Listeners.OnMapStart>(OnMapStart);
-        RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorized);
-        RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
-        RegisterEventHandler<EventPlayerChat>(OnPlayerChat);
-        AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
+        Server.MapName = CounterStrikeSharp.API.Server.MapName;
 
         if (!isReload)
             return;
 
-        Server.Map = Database.GetMapAsync(CounterStrikeSharp.API.Server.MapName).GetAwaiter().GetResult();
+        Server.Map = Database.GetMapAsync(Server.MapName).GetAwaiter().GetResult();
 
         foreach (var player in Utilities.GetPlayers().Where(IsValidPlayer))
         {

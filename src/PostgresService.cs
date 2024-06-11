@@ -41,6 +41,20 @@ public class PostgresService : IDatabase
             Pooling = true
         };
 
+        if (!config.DatabaseSsl)
+            return builder.ConnectionString;
+
+        builder.SslMode = SslMode.Require;
+
+        if (config.DatabaseCa.Length > 0)
+        {
+            builder.SslMode = SslMode.VerifyCA;
+            builder.RootCertificate = config.DatabaseCa;
+        }
+        
+        builder.SslKey = config.DatabaseKey;
+        builder.SslCertificate = config.DatabaseCert;
+
         return builder.ConnectionString;
     }
 
