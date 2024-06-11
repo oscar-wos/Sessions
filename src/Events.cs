@@ -7,9 +7,9 @@ public partial class Sessions
 {
     private HookResult OnPlayerChat(EventPlayerChat @event, GameEventInfo info)
     {
-        var player = Utilities.GetPlayerFromUserid(@event.Userid);
+        var controller = Utilities.GetPlayerFromUserid(@event.Userid);
 
-        if (!IsValidPlayer(player) || !Players.TryGetValue(player!.Slot, out var value) || value.Session == null)
+        if (!IsValidPlayer(controller) || !Players.TryGetValue(controller!.Slot, out var value) || value.Session == null)
             return HookResult.Continue;
 
         var messageType = @event.Teamonly ? MessageType.TeamChat : MessageType.Chat;

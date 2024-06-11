@@ -47,10 +47,14 @@ jobs:
                 mkdir -p plugin/plugins/TestPlugin
                 mkdir -p plugin/shared/Sessions.API
 
+            - name: Move Files
+              run: |
                 mv ./src/bin/Release/net8.0/* ./plugin/plugins/Sessions
                 mv ./TestPlugin/bin/Release/net8.0/* ./plugin/plugins/TestPlugin
                 mv ./Sessions.API/bin/Release/net8.0/* ./plugin/shared/Sessions.API
 
+            - name: Remove .API
+              run: |
                 rm ./plugin/plugins/Sessions/Sessions.API.*
                 rm ./plugin/plugins/TestPlugin/Sessions.API.*
 

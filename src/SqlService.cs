@@ -1,6 +1,7 @@
 ﻿using Dapper;
-using MySqlConnector;
 using Microsoft.Extensions.Logging;
+using MySqlConnector;
+using Npgsql;
 using Sessions.API;
 
 namespace Sessions;
@@ -41,6 +42,20 @@ public class SqlService : IDatabase
             AllowUserVariables = true,
             Pooling = true,
         };
+
+        if (!config.DatabaseSsl)
+            return builder.ConnectionString;
+
+        builder.SslMode = MySqlSslMode.Required;
+
+        if (config.DatabaseCa.Length > 0)
+        {
+            builder.SslMode = MySqlSslMode.VerifyCA;
+            builder.SslCa = config.DatabaseCa;
+        }
+        
+        builder.SslKey = config.DatabaseKey;
+        builder.SslCert = config.DatabaseCert;
 
         return builder.ConnectionString;
     }

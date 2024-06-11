@@ -6,6 +6,7 @@ public class Server
     public Map? Map { get; set; }
     public required string Ip { get; set; }
     public required ushort Port { get; set; }
+    public string? MapName { get; set; }
 }
 
 public class Map
