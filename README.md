@@ -1,12 +1,12 @@
 Supports postgresql + mysql
 `counterstrikesharp/configs/plugins/Sessions/Sessions.json`
-```
+```json
 {
-  "DatabaseType": "mysql",
-}
-
-{
-  "DatabaseType": "postgresql",
+  "DatabaseType": "mysql" | "postgresql",
+  "DatabaseSsl": true | false,
+  "DatabaseKey": "/path.pem",
+  "DatabaseCert": "/path.pem",
+  "DatabaseCa": "/path.pem" [optional]
 }
 ```
 ### Aliases
