@@ -18,8 +18,8 @@ public partial class Sessions
         if (!IsValidPlayer(controller))
             return;
 
-        OnPlayerConnect(playerSlot, steamId.SteamId64, NativeAPI.GetPlayerIpAddress(playerSlot).Split(":")[0]).GetAwaiter().GetResult();
-        CheckAlias(playerSlot, controller!.PlayerName).GetAwaiter().GetResult();
+        PlayerConnect(playerSlot, steamId.SteamId64, controller!.IpAddress!.Split(":")[0]).GetAwaiter().GetResult();
+        CheckAlias(playerSlot, controller.PlayerName).GetAwaiter().GetResult();
     }
 
     private void OnClientDisconnect(int playerSlot)

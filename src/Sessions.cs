@@ -14,16 +14,6 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
     public override void Load(bool isReload)
     {
-        RegisterCapabilities();
-        RegisterListener<Listeners.OnMapStart>(OnMapStart);
-        RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorized);
-        RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
-        RegisterEventHandler<EventPlayerChat>(OnPlayerChat);
-        AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
-    }
-
-    public override void OnAllPluginsLoaded(bool isReload)
-    {
         var ip = _ip.GetPublicIp()!;
         var port = (ushort)ConVar.Find("hostport")!.GetPrimitiveValue<int>();
 
@@ -33,15 +23,22 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
         Server.Port = port;
         Server.MapName = CounterStrikeSharp.API.Server.MapName;
 
+        RegisterCapabilities();
+        RegisterListener<Listeners.OnMapStart>(OnMapStart);
+        RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorized);
+        RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
+        RegisterEventHandler<EventPlayerChat>(OnPlayerChat);
+        AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
+
         if (!isReload)
             return;
 
         Server.Map = Database.GetMapAsync(Server.MapName).GetAwaiter().GetResult();
 
-        foreach (var player in Utilities.GetPlayers().Where(IsValidPlayer))
+        foreach (var controller in Utilities.GetPlayers().Where(IsValidPlayer))
         {
-            OnPlayerConnect(player.Slot, player.AuthorizedSteamID!.SteamId64, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]).GetAwaiter().GetResult();
-            CheckAlias(player.Slot, player.PlayerName).GetAwaiter().GetResult();
+            PlayerConnect(controller.Slot, controller.AuthorizedSteamID!.SteamId64, controller.IpAddress!.Split(":")[0]).GetAwaiter().GetResult();
+            CheckAlias(controller.Slot, controller.PlayerName).GetAwaiter().GetResult();
         }
     }
 
@@ -50,9 +47,9 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
         List<int> playerIds = [];
         List<long> sessionIds = [];
 
-        foreach (var player in Utilities.GetPlayers())
+        foreach (var controller in Utilities.GetPlayers().Where(IsValidPlayer))
         {
-            if (!IsValidPlayer(player) || !Players.TryGetValue(player.Slot, out var value))
+            if (!Players.TryGetValue(controller.Slot, out var value))
                 continue;
 
             playerIds.Add(value.Id);
@@ -64,7 +61,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
         Database.UpdateSessions(playerIds, sessionIds);
     }
 
-    private async Task OnPlayerConnect(int playerSlot, ulong steamId, string ip)
+    private async Task PlayerConnect(int playerSlot, ulong steamId, string ip)
     {
         Players[playerSlot] = await Database.GetPlayerAsync(steamId);
         Players[playerSlot].Session = await Database.GetSessionAsync(Players[playerSlot].Id, Server!.Id, Server!.Map!.Id, ip);

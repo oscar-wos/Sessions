@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Logging;
 using MySqlConnector;
-using Npgsql;
 using Sessions.API;
 
 namespace Sessions;
