@@ -1,6 +1,6 @@
 ﻿using Dapper;
-using Npgsql;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using Sessions.API;
 
 namespace Sessions;
@@ -38,7 +38,7 @@ public class PostgresService : IDatabase
             Username = config.DatabaseUser,
             Password = config.DatabasePassword,
             Database = config.DatabaseName,
-            Pooling = true
+            Pooling = true,
         };
 
         if (!config.DatabaseSsl)
@@ -51,7 +51,7 @@ public class PostgresService : IDatabase
             builder.SslMode = SslMode.VerifyCA;
             builder.RootCertificate = config.DatabaseCa;
         }
-        
+
         builder.SslKey = config.DatabaseKey;
         builder.SslCertificate = config.DatabaseCert;
 
@@ -82,12 +82,18 @@ public class PostgresService : IDatabase
 
         try
         {
-            var result = await _connection.QueryFirstOrDefaultAsync<Server>(_queries.SelectServer, new { ServerIp = serverIp, ServerPort = serverPortSigned });
+            var result = await _connection.QueryFirstOrDefaultAsync<Server>(
+                _queries.SelectServer,
+                new { ServerIp = serverIp, ServerPort = serverPortSigned }
+            );
 
             if (result != null)
                 return result;
 
-            return await _connection.QuerySingleAsync<Server>(_queries.InsertServer, new { ServerIp = serverIp, ServerPort = serverPortSigned });
+            return await _connection.QuerySingleAsync<Server>(
+                _queries.InsertServer,
+                new { ServerIp = serverIp, ServerPort = serverPortSigned }
+            );
         }
         catch (NpgsqlException ex)
         {
@@ -100,12 +106,18 @@ public class PostgresService : IDatabase
     {
         try
         {
-            var result = await _connection.QueryFirstOrDefaultAsync<Map>(_queries.SelectMap, new { MapName = mapName });
+            var result = await _connection.QueryFirstOrDefaultAsync<Map>(
+                _queries.SelectMap,
+                new { MapName = mapName }
+            );
 
             if (result != null)
                 return result;
 
-            return await _connection.QuerySingleAsync<Map>(_queries.InsertMap, new { MapName = mapName });
+            return await _connection.QuerySingleAsync<Map>(
+                _queries.InsertMap,
+                new { MapName = mapName }
+            );
         }
         catch (NpgsqlException ex)
         {
@@ -118,12 +130,18 @@ public class PostgresService : IDatabase
     {
         try
         {
-            var result = await _connection.QueryFirstOrDefaultAsync<Player>(_queries.SelectPlayer, new { SteamId = (long)steamId });
+            var result = await _connection.QueryFirstOrDefaultAsync<Player>(
+                _queries.SelectPlayer,
+                new { SteamId = (long)steamId }
+            );
 
             if (result != null)
                 return result;
 
-            return await _connection.QuerySingleAsync<Player>(_queries.InsertPlayer, new { SteamId = (long)steamId });
+            return await _connection.QuerySingleAsync<Player>(
+                _queries.InsertPlayer,
+                new { SteamId = (long)steamId }
+            );
         }
         catch (NpgsqlException ex)
         {
@@ -136,7 +154,16 @@ public class PostgresService : IDatabase
     {
         try
         {
-            return await _connection.QuerySingleAsync<Session>(_queries.InsertSession, new { PlayerId = playerId, ServerId = serverId, MapId = mapId, Ip = ip });
+            return await _connection.QuerySingleAsync<Session>(
+                _queries.InsertSession,
+                new
+                {
+                    PlayerId = playerId,
+                    ServerId = serverId,
+                    MapId = mapId,
+                    Ip = ip,
+                }
+            );
         }
         catch (NpgsqlException ex)
         {
@@ -149,7 +176,10 @@ public class PostgresService : IDatabase
     {
         try
         {
-            return await _connection.QueryFirstOrDefaultAsync<Alias>(_queries.SelectAlias, new { PlayerId = playerId });
+            return await _connection.QueryFirstOrDefaultAsync<Alias>(
+                _queries.SelectAlias,
+                new { PlayerId = playerId }
+            );
         }
         catch (NpgsqlException ex)
         {
@@ -158,7 +188,7 @@ public class PostgresService : IDatabase
         }
     }
 
-    public async void InsertAlias(long sessionId, int playerId, string name)
+    public async void InsertAliasAsync(long sessionId, int playerId, string name)
     {
         try
         {
@@ -177,7 +207,12 @@ public class PostgresService : IDatabase
         }
     }
 
-    public async void InsertMessage(long sessionId, int playerId, MessageType messageType, string message)
+    public async void InsertMessageAsync(
+        long sessionId,
+        int playerId,
+        MessageType messageType,
+        string message
+    )
     {
         try
         {
@@ -197,17 +232,25 @@ public class PostgresService : IDatabase
         }
     }
 
-    public async void UpdateSessions(List<int> playerIds, List<long> sessionIds)
+    public async void UpdateSessionsAsync(List<int> playerIds, List<long> sessionIds)
     {
         await using var tx = await _connection.BeginTransactionAsync();
 
         try
         {
             foreach (var playerId in playerIds)
-                await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = playerId }, transaction: tx);
+                await _connection.ExecuteAsync(
+                    _queries.UpdateSeen,
+                    new { PlayerId = playerId },
+                    transaction: tx
+                );
 
             foreach (var sessionId in sessionIds)
-                await _connection.ExecuteAsync(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
+                await _connection.ExecuteAsync(
+                    _queries.UpdateSession,
+                    new { SessionId = sessionId },
+                    transaction: tx
+                );
 
             await tx.CommitAsync();
         }
@@ -219,7 +262,7 @@ public class PostgresService : IDatabase
         }
     }
 
-    public async void UpdateSeen(int playerId)
+    public async void UpdateSeenAsync(int playerId)
     {
         try
         {
@@ -235,73 +278,85 @@ public class PostgresService : IDatabase
 
 public class PostgresServiceQueries : LoadQueries, IDatabaseQueries
 {
-    protected override string CreateServers => """
-                                               CREATE TABLE IF NOT EXISTS servers (
-                                                       id SMALLSERIAL PRIMARY KEY,
-                                                       server_ip INET NOT NULL,
-                                                       server_port SMALLINT NOT NULL
-                                                   )
-                                               """;
+    protected override string CreateServers =>
+        """
+            CREATE TABLE IF NOT EXISTS servers (
+                    id SMALLSERIAL PRIMARY KEY,
+                    server_ip INET NOT NULL,
+                    server_port SMALLINT NOT NULL
+                )
+            """;
 
-    protected override string CreateMaps => """
-                                            CREATE TABLE IF NOT EXISTS maps (
-                                                    id SMALLSERIAL PRIMARY KEY,
-                                                    map_name VARCHAR(256) NOT NULL
-                                                )
-                                            """;
+    protected override string CreateMaps =>
+        """
+            CREATE TABLE IF NOT EXISTS maps (
+                    id SMALLSERIAL PRIMARY KEY,
+                    map_name VARCHAR(256) NOT NULL
+                )
+            """;
 
-    protected override string CreatePlayers => """
-                                               CREATE TABLE IF NOT EXISTS players (
-                                                       id SERIAL,
-                                                       steam_id BIGINT NOT NULL PRIMARY KEY,
-                                                       first_seen TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                                       last_seen TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                                   )
-                                               """;
+    protected override string CreatePlayers =>
+        """
+            CREATE TABLE IF NOT EXISTS players (
+                    id SERIAL,
+                    steam_id BIGINT NOT NULL PRIMARY KEY,
+                    first_seen TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    last_seen TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """;
 
-    protected override string CreateSessions => """
-                                                CREATE TABLE IF NOT EXISTS sessions (
-                                                        id BIGSERIAL PRIMARY KEY,
-                                                        player_id INT NOT NULL,
-                                                        server_id SMALLINT NOT NULL,
-                                                        map_id SMALLINT NOT NULL,
-                                                        ip INET NOT NULL,
-                                                        start_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                                        end_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                                    )
-                                                """;
+    protected override string CreateSessions =>
+        """
+            CREATE TABLE IF NOT EXISTS sessions (
+                    id BIGSERIAL PRIMARY KEY,
+                    player_id INT NOT NULL,
+                    server_id SMALLINT NOT NULL,
+                    map_id SMALLINT NOT NULL,
+                    ip INET NOT NULL,
+                    start_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    end_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """;
 
-    protected override string CreateAliases => """
-                                               CREATE TABLE IF NOT EXISTS aliases (
-                                                       id BIGSERIAL PRIMARY KEY,
-                                                       session_id BIGINT NOT NULL,
-                                                       player_id INT NOT NULL,
-                                                       timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                                       name VARCHAR(128)
-                                                   )
-                                               """;
+    protected override string CreateAliases =>
+        """
+            CREATE TABLE IF NOT EXISTS aliases (
+                    id BIGSERIAL PRIMARY KEY,
+                    session_id BIGINT NOT NULL,
+                    player_id INT NOT NULL,
+                    timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    name VARCHAR(128)
+                )
+            """;
 
-    protected override string CreateMessages => """
-                                                CREATE TABLE IF NOT EXISTS messages (
-                                                        id BIGSERIAL PRIMARY KEY,
-                                                        session_id BIGINT NOT NULL,
-                                                        player_id INT NOT NULL,
-                                                        timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                                        message_type SMALLINT NOT NULL,
-                                                        message VARCHAR(512)
-                                                    )
-                                                """;
+    protected override string CreateMessages =>
+        """
+            CREATE TABLE IF NOT EXISTS messages (
+                    id BIGSERIAL PRIMARY KEY,
+                    session_id BIGINT NOT NULL,
+                    player_id INT NOT NULL,
+                    timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    message_type SMALLINT NOT NULL,
+                    message VARCHAR(512)
+                )
+            """;
 
-    public string SelectServer => "SELECT id FROM servers WHERE server_ip = CAST(@ServerIp as INET) AND server_port = @ServerPort";
+    public string SelectServer =>
+        "SELECT id FROM servers WHERE server_ip = CAST(@ServerIp as INET) AND server_port = @ServerPort";
     public string SelectMap => "SELECT id FROM maps WHERE map_name = @MapName";
     public string SelectPlayer => "SELECT id FROM players WHERE steam_id = @SteamId";
-    public string SelectAlias => "SELECT id, name FROM aliases WHERE player_id = @PlayerId ORDER BY id DESC LIMIT 1";
-    public string InsertServer => "INSERT INTO servers (server_ip, server_port) VALUES (CAST(@ServerIp as INET), @ServerPort) RETURNING id";
+    public string SelectAlias =>
+        "SELECT id, name FROM aliases WHERE player_id = @PlayerId ORDER BY id DESC LIMIT 1";
+    public string InsertServer =>
+        "INSERT INTO servers (server_ip, server_port) VALUES (CAST(@ServerIp as INET), @ServerPort) RETURNING id";
     public string InsertMap => "INSERT INTO maps (map_name) VALUES (@MapName) RETURNING id";
     public string InsertPlayer => "INSERT INTO players (steam_id) VALUES (@SteamId) RETURNING id";
-    public string InsertSession => "INSERT INTO sessions (player_id, server_id, map_id, ip) VALUES (@PlayerId, @ServerId, @MapId, CAST(@Ip as INET)) RETURNING id";
-    public string InsertAlias => "INSERT INTO aliases (session_id, player_id, name) VALUES (@SessionId, @PlayerId, @Name)";
-    public string InsertMessage => "INSERT INTO messages (session_id, player_id, message_type, message) VALUES (@SessionId, @PlayerId, @MessageType, @Message)";
+    public string InsertSession =>
+        "INSERT INTO sessions (player_id, server_id, map_id, ip) VALUES (@PlayerId, @ServerId, @MapId, CAST(@Ip as INET)) RETURNING id";
+    public string InsertAlias =>
+        "INSERT INTO aliases (session_id, player_id, name) VALUES (@SessionId, @PlayerId, @Name)";
+    public string InsertMessage =>
+        "INSERT INTO messages (session_id, player_id, message_type, message) VALUES (@SessionId, @PlayerId, @MessageType, @Message)";
     public string UpdateSession => "UPDATE sessions SET end_time = NOW() WHERE id = @SessionId";
     public string UpdateSeen => "UPDATE players SET last_seen = NOW() WHERE id = @PlayerId";
 }

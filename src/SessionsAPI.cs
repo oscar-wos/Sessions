@@ -6,19 +6,28 @@ namespace Sessions;
 
 public partial class Sessions
 {
-    private static PlayerCapability<ISessionsPlayer> CapabilityPlayer { get; } = new("sessions:player");
-    private static PluginCapability<ISessionsServer> CapabilityServer { get; } = new("sessions:server");
+    private static PlayerCapability<ISessionsPlayer> CapabilityPlayer { get; } =
+        new("sessions:player");
+
+    private static PluginCapability<ISessionsServer> CapabilityServer { get; } =
+        new("sessions:server");
 
     private void RegisterCapabilities()
     {
-        Capabilities.RegisterPlayerCapability(CapabilityPlayer, player => new SessionsPlayer(player, this));
+        Capabilities.RegisterPlayerCapability(
+            CapabilityPlayer,
+            player => new SessionsPlayer(player, this)
+        );
+
         Capabilities.RegisterPluginCapability(CapabilityServer, () => new SessionsServer(this));
     }
 }
 
 public class SessionsPlayer(CCSPlayerController player, Sessions plugin) : ISessionsPlayer
 {
-    public Player? Player { get; } = plugin.Players.TryGetValue(player.Slot, out var value) ? value : null;
+    public Player? Player { get; } =
+        plugin.Players.TryGetValue(player.Slot, out var value) ? value : null;
+
     public Session? Session => Player?.Session;
 }
 

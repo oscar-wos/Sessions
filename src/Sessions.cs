@@ -14,34 +14,48 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
     public override void Load(bool isReload)
     {
+        AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
         RegisterCapabilities();
+
         RegisterListener<Listeners.OnMapStart>(OnMapStart);
         RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorized);
         RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
-        RegisterEventHandler<EventPlayerChat>(OnPlayerChat);
-        AddTimer(1.0f, Timer_Repeat, TimerFlags.REPEAT);
+
+        NativeAPI.HookUsermessage(
+            118,
+            (InputArgument)FunctionReference.Create(OnSay),
+            HookMode.Pre
+        );
     }
 
     public override void OnAllPluginsLoaded(bool isReload)
     {
-        var ip = _ip.GetPublicIp()!;
+        var ip = _ip.GetPublicIp();
         var port = (ushort)ConVar.Find("hostport")!.GetPrimitiveValue<int>();
 
         Database.StartAsync().GetAwaiter().GetResult();
         Server = Database.GetServerAsync(ip, port).GetAwaiter().GetResult();
+
         Server.Ip = ip;
         Server.Port = port;
-        Server.MapName = CounterStrikeSharp.API.Server.MapName;
 
-        if (!isReload)
-            return;
-
-        Server.Map = Database.GetMapAsync(Server.MapName).GetAwaiter().GetResult();
+        Server.Map = Database
+            ?.GetMapAsync(CounterStrikeSharp.API.Server.MapName)
+            .GetAwaiter()
+            .GetResult();
 
         foreach (var player in Utilities.GetPlayers().Where(IsValidPlayer))
         {
-            OnPlayerConnect(player.Slot, player.AuthorizedSteamID!.SteamId64, NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]).GetAwaiter().GetResult();
-            CheckAlias(player.Slot, player.PlayerName).GetAwaiter().GetResult();
+            _ = Task.Run(async () =>
+            {
+                await OnPlayerConnect(
+                    player.Slot,
+                    player.AuthorizedSteamID!.SteamId64,
+                    NativeAPI.GetPlayerIpAddress(player.Slot).Split(":")[0]
+                );
+
+                await CheckAlias(player.Slot, player.PlayerName);
+            });
         }
     }
 
@@ -52,7 +66,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
 
         foreach (var player in Utilities.GetPlayers())
         {
-            if (!IsValidPlayer(player) || !Players.TryGetValue(player.Slot, out var value))
+            if (!IsValidPlayer(player) || !_players.TryGetValue(player.Slot, out var value))
                 continue;
 
             playerIds.Add(value.Id);
@@ -61,24 +75,30 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
                 sessionIds.Add(value.Session.Id);
         }
 
-        Database.UpdateSessions(playerIds, sessionIds);
+        _ = Task.Run(() => Database.UpdateSessionsAsync(playerIds, sessionIds));
     }
 
     private async Task OnPlayerConnect(int playerSlot, ulong steamId, string ip)
     {
-        Players[playerSlot] = await Database.GetPlayerAsync(steamId);
-        Players[playerSlot].Session = await Database.GetSessionAsync(Players[playerSlot].Id, Server!.Id, Server!.Map!.Id, ip);
+        _players[playerSlot] = await Database.GetPlayerAsync(steamId);
+
+        _players[playerSlot].Session = await Database.GetSessionAsync(
+            _players[playerSlot].Id,
+            Server!.Id,
+            Server!.Map!.Id,
+            ip
+        );
     }
 
     private async Task CheckAlias(int playerSlot, string name)
     {
-        if (!Players.TryGetValue(playerSlot, out var value) || value.Session == null)
+        if (!_players.TryGetValue(playerSlot, out var value) || value.Session == null)
             return;
 
         var recentAlias = await Database.GetAliasAsync(value.Id);
 
         if (recentAlias == null || recentAlias.Name != name)
-            Database.InsertAlias(value.Session.Id, value.Id, name);
+            Database.InsertAliasAsync(value.Session.Id, value.Id, name);
     }
 
     private static bool IsValidPlayer(CCSPlayerController? player)

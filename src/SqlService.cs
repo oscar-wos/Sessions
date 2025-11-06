@@ -53,7 +53,7 @@ public class SqlService : IDatabase
             builder.SslMode = MySqlSslMode.VerifyCA;
             builder.SslCa = config.DatabaseCa;
         }
-        
+
         builder.SslKey = config.DatabaseKey;
         builder.SslCert = config.DatabaseCert;
 
@@ -82,13 +82,24 @@ public class SqlService : IDatabase
     {
         try
         {
-            var result = await _connection.QueryFirstOrDefaultAsync<Server>(_queries.SelectServer, new { ServerIp = serverIp, ServerPort = serverPort });
+            var result = await _connection.QueryFirstOrDefaultAsync<Server>(
+                _queries.SelectServer,
+                new { ServerIp = serverIp, ServerPort = serverPort }
+            );
 
             if (result != null)
                 return result;
 
-            var insert = await _connection.ExecuteScalarAsync(_queries.InsertServer, new { ServerIp = serverIp, ServerPort = serverPort });
-            return new Server { Id = Convert.ToInt16(insert), Ip = serverIp, Port = serverPort };
+            var insert = await _connection.ExecuteScalarAsync(
+                _queries.InsertServer,
+                new { ServerIp = serverIp, ServerPort = serverPort }
+            );
+            return new Server
+            {
+                Id = Convert.ToInt16(insert),
+                Ip = serverIp,
+                Port = serverPort,
+            };
         }
         catch (MySqlException ex)
         {
@@ -101,12 +112,18 @@ public class SqlService : IDatabase
     {
         try
         {
-            var result = await _connection.QueryFirstOrDefaultAsync<Map>(_queries.SelectMap, new { MapName = mapName });
+            var result = await _connection.QueryFirstOrDefaultAsync<Map>(
+                _queries.SelectMap,
+                new { MapName = mapName }
+            );
 
             if (result != null)
                 return result;
 
-            var insert = await _connection.ExecuteScalarAsync(_queries.InsertMap, new { MapName = mapName });
+            var insert = await _connection.ExecuteScalarAsync(
+                _queries.InsertMap,
+                new { MapName = mapName }
+            );
             return new Map { Id = Convert.ToInt16(insert) };
         }
         catch (MySqlException ex)
@@ -120,12 +137,18 @@ public class SqlService : IDatabase
     {
         try
         {
-            var result = await _connection.QueryFirstOrDefaultAsync<Player>(_queries.SelectPlayer, new { SteamId = steamId });
+            var result = await _connection.QueryFirstOrDefaultAsync<Player>(
+                _queries.SelectPlayer,
+                new { SteamId = steamId }
+            );
 
             if (result != null)
                 return result;
 
-            var insert = await _connection.ExecuteScalarAsync(_queries.InsertPlayer, new { SteamId = steamId });
+            var insert = await _connection.ExecuteScalarAsync(
+                _queries.InsertPlayer,
+                new { SteamId = steamId }
+            );
             return new Player { Id = Convert.ToInt32(insert) };
         }
         catch (MySqlException ex)
@@ -139,7 +162,16 @@ public class SqlService : IDatabase
     {
         try
         {
-            var result = await _connection.ExecuteScalarAsync(_queries.InsertSession, new { PlayerId = playerId, ServerId = serverId, MapId = mapId, Ip = ip });
+            var result = await _connection.ExecuteScalarAsync(
+                _queries.InsertSession,
+                new
+                {
+                    PlayerId = playerId,
+                    ServerId = serverId,
+                    MapId = mapId,
+                    Ip = ip,
+                }
+            );
             return new Session { Id = Convert.ToInt64(result) };
         }
         catch (MySqlException ex)
@@ -153,7 +185,10 @@ public class SqlService : IDatabase
     {
         try
         {
-            return await _connection.QueryFirstOrDefaultAsync<Alias>(_queries.SelectAlias, new { PlayerId = playerId });
+            return await _connection.QueryFirstOrDefaultAsync<Alias>(
+                _queries.SelectAlias,
+                new { PlayerId = playerId }
+            );
         }
         catch (MySqlException ex)
         {
@@ -162,7 +197,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public async void InsertAlias(long sessionId, int playerId, string name)
+    public async void InsertAliasAsync(long sessionId, int playerId, string name)
     {
         try
         {
@@ -181,7 +216,12 @@ public class SqlService : IDatabase
         }
     }
 
-    public async void InsertMessage(long sessionId, int playerId, MessageType messageType, string message)
+    public async void InsertMessageAsync(
+        long sessionId,
+        int playerId,
+        MessageType messageType,
+        string message
+    )
     {
         try
         {
@@ -201,17 +241,25 @@ public class SqlService : IDatabase
         }
     }
 
-    public async void UpdateSessions(List<int> playerIds, List<long> sessionIds)
+    public async void UpdateSessionsAsync(List<int> playerIds, List<long> sessionIds)
     {
         await using var tx = await _connection.BeginTransactionAsync();
 
         try
         {
             foreach (var playerId in playerIds)
-                await _connection.ExecuteAsync(_queries.UpdateSeen, new { PlayerId = playerId }, transaction: tx);
+                await _connection.ExecuteAsync(
+                    _queries.UpdateSeen,
+                    new { PlayerId = playerId },
+                    transaction: tx
+                );
 
             foreach (var sessionId in sessionIds)
-                await _connection.ExecuteAsync(_queries.UpdateSession, new { SessionId = sessionId }, transaction: tx);
+                await _connection.ExecuteAsync(
+                    _queries.UpdateSession,
+                    new { SessionId = sessionId },
+                    transaction: tx
+                );
 
             await tx.CommitAsync();
         }
@@ -223,7 +271,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public async void UpdateSeen(int playerId)
+    public async void UpdateSeenAsync(int playerId)
     {
         try
         {
@@ -239,73 +287,87 @@ public class SqlService : IDatabase
 
 public class SqlServiceQueries : LoadQueries, IDatabaseQueries
 {
-    protected override string CreateServers => """
-                                               CREATE TABLE IF NOT EXISTS servers (
-                                               id TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                                               server_ip VARCHAR(15) NOT NULL,
-                                               server_port SMALLINT UNSIGNED NOT NULL
-                                               )
-                                               """;
+    protected override string CreateServers =>
+        """
+            CREATE TABLE IF NOT EXISTS servers (
+            id TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            server_ip VARCHAR(15) NOT NULL,
+            server_port SMALLINT UNSIGNED NOT NULL
+            )
+            """;
 
-    protected override string CreateMaps => """
-                                            CREATE TABLE IF NOT EXISTS maps (
-                                            id SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                                            map_name VARCHAR(64) NOT NULL
-                                            )
-                                            """;
+    protected override string CreateMaps =>
+        """
+            CREATE TABLE IF NOT EXISTS maps (
+            id SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            map_name VARCHAR(64) NOT NULL
+            )
+            """;
 
-    protected override string CreatePlayers => """
-                                               CREATE TABLE IF NOT EXISTS players (
-                                               id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                                               steam_id BIGINT UNSIGNED NOT NULL,
-                                               first_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                               last_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                               )
-                                               """;
+    protected override string CreatePlayers =>
+        """
+            CREATE TABLE IF NOT EXISTS players (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            steam_id BIGINT UNSIGNED NOT NULL,
+            first_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """;
 
-    protected override string CreateSessions => """
-                                                CREATE TABLE IF NOT EXISTS sessions (
-                                                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                                                player_id INT UNSIGNED NOT NULL,
-                                                server_id TINYINT UNSIGNED NOT NULL,
-                                                map_id SMALLINT UNSIGNED NOT NULL,
-                                                ip VARCHAR(15) NOT NULL,
-                                                start_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                                end_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                                )
-                                                """;
+    protected override string CreateSessions =>
+        """
+            CREATE TABLE IF NOT EXISTS sessions (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            player_id INT UNSIGNED NOT NULL,
+            server_id TINYINT UNSIGNED NOT NULL,
+            map_id SMALLINT UNSIGNED NOT NULL,
+            ip VARCHAR(15) NOT NULL,
+            start_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            end_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """;
 
-    protected override string CreateAliases => """
-                                               CREATE TABLE IF NOT EXISTS aliases (
-                                               id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                                               session_id BIGINT UNSIGNED NOT NULL,
-                                               player_id INT UNSIGNED NOT NULL,
-                                               timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                               name VARCHAR(32) COLLATE utf8mb4_unicode_520_ci
-                                               )
-                                               """;
+    protected override string CreateAliases =>
+        """
+            CREATE TABLE IF NOT EXISTS aliases (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            session_id BIGINT UNSIGNED NOT NULL,
+            player_id INT UNSIGNED NOT NULL,
+            timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            name VARCHAR(32) COLLATE utf8mb4_unicode_520_ci
+            )
+            """;
 
-    protected override string CreateMessages => """
-                                                CREATE TABLE IF NOT EXISTS messages (
-                                                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                                                session_id BIGINT UNSIGNED NOT NULL,
-                                                player_id INT UNSIGNED NOT NULL,
-                                                timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                                message_type TINYINT UNSIGNED NOT NULL,
-                                                message VARCHAR(128) COLLATE utf8mb4_unicode_520_ci
-                                                )
-                                                """;
+    protected override string CreateMessages =>
+        """
+            CREATE TABLE IF NOT EXISTS messages (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            session_id BIGINT UNSIGNED NOT NULL,
+            player_id INT UNSIGNED NOT NULL,
+            timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            message_type TINYINT UNSIGNED NOT NULL,
+            message VARCHAR(128) COLLATE utf8mb4_unicode_520_ci
+            )
+            """;
 
-    public string SelectServer => "SELECT id FROM servers WHERE server_ip = @ServerIp AND server_port = @ServerPort";
+    public string SelectServer =>
+        "SELECT id FROM servers WHERE server_ip = @ServerIp AND server_port = @ServerPort";
     public string SelectMap => "SELECT id FROM maps WHERE map_name = @MapName";
     public string SelectPlayer => "SELECT id FROM players WHERE steam_id = @SteamId";
-    public string SelectAlias => "SELECT id, name FROM aliases WHERE player_id = @PlayerId ORDER BY id DESC LIMIT 1";
-    public string InsertServer => "INSERT INTO servers (server_ip, server_port) VALUES (@ServerIp, @ServerPort); SELECT LAST_INSERT_ID()";
-    public string InsertMap => "INSERT INTO maps (map_name) VALUES (@MapName); SELECT LAST_INSERT_ID()";
-    public string InsertPlayer => "INSERT INTO players (steam_id) VALUES (@SteamId); SELECT LAST_INSERT_ID()";
-    public string InsertSession => "INSERT INTO sessions (player_id, server_id, map_id, ip) VALUES (@PlayerId, @ServerId, @MapId, @Ip); SELECT LAST_INSERT_ID()";
-    public string InsertAlias => "INSERT INTO aliases (session_id, player_id, name) VALUES (@SessionId, @PlayerId, @Name)";
-    public string InsertMessage => "INSERT INTO messages (session_id, player_id, message_type, message) VALUES (@SessionId, @PlayerId, @MessageType, @Message)";
+    public string SelectAlias =>
+        "SELECT id, name FROM aliases WHERE player_id = @PlayerId ORDER BY id DESC LIMIT 1";
+    public string InsertServer =>
+        "INSERT INTO servers (server_ip, server_port) VALUES (@ServerIp, @ServerPort); SELECT LAST_INSERT_ID()";
+    public string InsertMap =>
+        "INSERT INTO maps (map_name) VALUES (@MapName); SELECT LAST_INSERT_ID()";
+    public string InsertPlayer =>
+        "INSERT INTO players (steam_id) VALUES (@SteamId); SELECT LAST_INSERT_ID()";
+    public string InsertSession =>
+        "INSERT INTO sessions (player_id, server_id, map_id, ip) VALUES (@PlayerId, @ServerId, @MapId, @Ip); SELECT LAST_INSERT_ID()";
+    public string InsertAlias =>
+        "INSERT INTO aliases (session_id, player_id, name) VALUES (@SessionId, @PlayerId, @Name)";
+    public string InsertMessage =>
+        "INSERT INTO messages (session_id, player_id, message_type, message) VALUES (@SessionId, @PlayerId, @MessageType, @Message)";
     public string UpdateSession => "UPDATE sessions SET end_time = NOW() WHERE id = @SessionId";
     public string UpdateSeen => "UPDATE players SET last_seen = NOW() WHERE id = @PlayerId";
 }

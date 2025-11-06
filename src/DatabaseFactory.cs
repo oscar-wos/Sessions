@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 
 namespace Sessions;
 
@@ -10,11 +10,11 @@ public class DatabaseFactory
         if (!CheckConfig(config))
             throw new InvalidOperationException("Database is not set in the configuration file");
 
-        //#if DEBUG
-        plugin.Logger.LogInformation($"Checked: {config.DatabaseType} SSL: {config.DatabaseSsl.ToString()} " +
-                                     $"{config.DatabaseUser}@{config.DatabaseHost}:{config.DatabasePort} " +
-                                     $"{config.DatabaseName}:{Regex.Replace(config.DatabasePassword, ".", "*")}");
-        //#endif
+        plugin.Logger.LogInformation(
+            $"Checked: {config.DatabaseType} SSL: {config.DatabaseSsl.ToString()} "
+                + $"{config.DatabaseUser}@{config.DatabaseHost}:{config.DatabasePort} "
+                + $"{config.DatabaseName}:{Regex.Replace(config.DatabasePassword, ".", "*")}"
+        );
 
         var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
         ILogger logger = loggerFactory.CreateLogger<DatabaseFactory>();
@@ -30,10 +30,10 @@ public class DatabaseFactory
     private static bool CheckConfig(SessionsConfig config)
     {
         return !string.IsNullOrWhiteSpace(config.DatabaseType)
-               && !string.IsNullOrWhiteSpace(config.DatabaseHost)
-               && !string.IsNullOrWhiteSpace(config.DatabaseUser)
-               && !string.IsNullOrWhiteSpace(config.DatabaseName)
-               && config.DatabasePort != 0;
+            && !string.IsNullOrWhiteSpace(config.DatabaseHost)
+            && !string.IsNullOrWhiteSpace(config.DatabaseUser)
+            && !string.IsNullOrWhiteSpace(config.DatabaseName)
+            && config.DatabasePort != 0;
     }
 
     public IDatabase Database { get; }

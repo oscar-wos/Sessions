@@ -10,8 +10,8 @@ public interface IDatabase
     Task<Player> GetPlayerAsync(ulong steamId);
     Task<Session> GetSessionAsync(int playerId, int serverId, int mapId, string ip);
     Task<Alias?> GetAliasAsync(int playerId);
-    void InsertAlias(long sessionId, int playerId, string name);
-    void InsertMessage(long sessionId, int playerId, MessageType messageType, string message);
-    void UpdateSessions(List<int> playerIds, List<long> sessionIds);
-    void UpdateSeen(int playerId);
+    void InsertAliasAsync(long sessionId, int playerId, string name);
+    void InsertMessageAsync(long sessionId, int playerId, MessageType messageType, string message);
+    void UpdateSessionsAsync(List<int> playerIds, List<long> sessionIds);
+    void UpdateSeenAsync(int playerId);
 }
