@@ -40,7 +40,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
         Server.Port = port;
 
         Server.Map = Database
-            ?.GetMapAsync(CounterStrikeSharp.API.Server.MapName)
+            .GetMapAsync(CounterStrikeSharp.API.Server.MapName)
             .GetAwaiter()
             .GetResult();
 
@@ -75,7 +75,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
                 sessionIds.Add(value.Session.Id);
         }
 
-        _ = Task.Run(() => Database.UpdateSessionsAsync(playerIds, sessionIds));
+        _ = Task.Run(async () => await Database.UpdateSessionsAsync(playerIds, sessionIds));
     }
 
     private async Task OnPlayerConnect(int playerSlot, ulong steamId, string ip)
@@ -98,7 +98,7 @@ public partial class Sessions : BasePlugin, IPluginConfig<SessionsConfig>
         var recentAlias = await Database.GetAliasAsync(value.Id);
 
         if (recentAlias == null || recentAlias.Name != name)
-            Database.InsertAliasAsync(value.Session.Id, value.Id, name);
+            await Database.InsertAliasAsync(value.Session.Id, value.Id, name);
     }
 
     private static bool IsValidPlayer(CCSPlayerController? player)

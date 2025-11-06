@@ -197,7 +197,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public async void InsertAliasAsync(long sessionId, int playerId, string name)
+    public async Task InsertAliasAsync(long sessionId, int playerId, string name)
     {
         try
         {
@@ -216,7 +216,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public async void InsertMessageAsync(
+    public async Task InsertMessageAsync(
         long sessionId,
         int playerId,
         MessageType messageType,
@@ -241,7 +241,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public async void UpdateSessionsAsync(List<int> playerIds, List<long> sessionIds)
+    public async Task UpdateSessionsAsync(List<int> playerIds, List<long> sessionIds)
     {
         await using var tx = await _connection.BeginTransactionAsync();
 
@@ -271,7 +271,7 @@ public class SqlService : IDatabase
         }
     }
 
-    public async void UpdateSeenAsync(int playerId)
+    public async Task UpdateSeenAsync(int playerId)
     {
         try
         {

@@ -40,7 +40,7 @@ public partial class Sessions
 
         _ = Task.Run(async () =>
         {
-            Database.UpdateSeenAsync(value.Id);
+            await Database.UpdateSeenAsync(value.Id);
             _players.Remove(playerSlot);
         });
     }
@@ -58,7 +58,7 @@ public partial class Sessions
             return HookResult.Continue;
 
         _ = Task.Run(async () =>
-            Database.InsertMessageAsync(
+            await Database.InsertMessageAsync(
                 value.Session.Id,
                 value.Id,
                 chat ? MessageType.TeamChat : MessageType.Chat,

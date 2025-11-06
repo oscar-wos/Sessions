@@ -9,20 +9,24 @@ namespace TestPlugin;
 public class TestPlugin : BasePlugin
 {
     public override string ModuleName => "TestPlugin";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.1";
 
-    private static PlayerCapability<ISessionsPlayer> CapabilityPlayer { get; } = new("sessions:player");
-    private static PluginCapability<ISessionsServer> CapabilityServer { get; } = new("sessions:server");
+    private static PlayerCapability<ISessionsPlayer> CapabilityPlayer { get; } =
+        new("sessions:player");
+
+    private static PluginCapability<ISessionsServer> CapabilityServer { get; } =
+        new("sessions:server");
 
     public override void OnAllPluginsLoaded(bool isReload)
     {
         var server = CapabilityServer.Get()!.Server;
 
         if (server != null)
-            Logger.LogInformation($"Server: {server.Id} ({server.Ip}:{server.Port}) - Map: {server.MapName} [{server.Map!.Id}]");
+            Logger.LogInformation(
+                $"Server: {server.Id} ({server.Ip}:{server.Port}) - Map: {server.MapName} [{server.Map!.Id}]"
+            );
 
         AddCommand("css_test", "test", CommandTest);
-        RegisterEventHandler<EventPlayerConnect>(EventConnect, HookMode.Pre);
     }
 
     private void CommandTest(CCSPlayerController? controller, CommandInfo info)
@@ -37,20 +41,8 @@ public class TestPlugin : BasePlugin
         if (server == null || player == null || session == null)
             return;
 
-        Logger.LogInformation($"Player: {player.Id} - Session: {session.Id} - Server: {server.Id}/{server.MapName}[{server.Map!.Id}] ({server.Ip}:{server.Port}");
-    }
-
-    private HookResult EventConnect(EventPlayerConnect @event, GameEventInfo info)
-    {
-        if (@event.Userid == null)
-            return HookResult.Continue;
-
-        var controller = @event.Userid;
-        var player = CapabilityPlayer.Get(controller)!.Player;
-
-        if (player != null)
-            Logger.LogInformation($"Player {player.Id} connected");
-
-        return HookResult.Continue;
+        Logger.LogInformation(
+            $"Player: {player.Id} - Session: {session.Id} - Server: {server.Id}/{server.MapName}[{server.Map!.Id}] ({server.Ip}:{server.Port}"
+        );
     }
 }
