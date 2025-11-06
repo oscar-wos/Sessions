@@ -14,7 +14,7 @@ public class TestPlugin : BasePlugin
     private static PlayerCapability<ISessionsPlayer> CapabilityPlayer { get; } = new("sessions:player");
     private static PluginCapability<ISessionsServer> CapabilityServer { get; } = new("sessions:server");
 
-    public override void Load(bool isReload)
+    public override void OnAllPluginsLoaded(bool isReload)
     {
         var server = CapabilityServer.Get()!.Server;
 
