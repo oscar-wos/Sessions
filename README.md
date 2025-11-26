@@ -1,3 +1,9 @@
+# v2
+https://github.com/oscar-wos/RSession
+
+swiftlys2 can run alongside cs# / modsharp / metamod if you use the swiftlys2-loader and put it last in gameinfo.gi after any other framework
+
+### v1
 Supports postgresql + mysql
 `counterstrikesharp/configs/plugins/Sessions/Sessions.json`
 ```json
